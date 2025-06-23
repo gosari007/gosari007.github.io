@@ -149,6 +149,7 @@ html, body {
 /* 홀수 문장(의문문) 스타일 - 배경색 제거 */
 .question-sentence {
   /* background-color 제거 */
+  color: #16c016; /* 녹색으로 색상 변경 */
   text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5); /* 텍스트에 약간의 그림자로 가독성 향상 */
   font-weight: 500; /* 약간 더 굵게 */
   letter-spacing: 0.2px; /* 글자 간격 살짝 넓힘 */
@@ -169,6 +170,7 @@ html, body {
 /* 홀수/짝수 문장 스타일 구분 - 배경색 제거 */
 .sentence-item.question-sentence {
   /* background-color 제거 */
+  color: #16c016; /* 녹색으로 색상 변경 */
   border-radius: 3px; /* 모서리 둥글게 유지 */
 }
 

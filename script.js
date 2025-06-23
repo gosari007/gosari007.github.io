@@ -1839,17 +1839,26 @@ function updateSubjectAuxClones(currentTime) {
           cp.currentY = clone.targetY;
           // originalX는 이미 설정됐으므로 변경하지 않음
           cp.originalY = cp.currentY; // Y 위치만 업데이트
-        });
-      }} else if (clone.animationPhase === 'waiting') {
-      // 1초 대기 후 위치 교환 시작 (더 빠른 플레이 경험)
-      const waitDuration = 1000; // 1초(1000ms) 대기
-      const waitElapsedTime = currentTime - clone.waitStartTime;
+        });      }} else if (clone.animationPhase === 'waiting') {
+      // 오디오 재생 완료 확인
+      const audioFinished = !currentSentenceAudio || currentSentenceAudio.ended || currentSentenceAudio.paused;
+      // 오디오 종료 후 1초 대기 후 위치 교환 시작
+      const waitDuration = audioFinished ? 1000 : 200; // 오디오가 끝났으면 1초, 아니면 계속 짧게 체크
+      const waitElapsedTime = audioFinished ? (currentTime - clone.waitStartTime) : 0;
       
+      // 오디오가 끝나지 않은 경우 waitStartTime 계속 업데이트
+      if (!audioFinished) {
+        clone.waitStartTime = currentTime;
+        return; // 오디오가 끝날 때까지 대기
+      }
+
+      // 오디오 종료 후 1초 대기 시간이 지나면 위치 교환 시작
       if (waitElapsedTime >= waitDuration) {
         // 대기 완료, 위치 교환 애니메이션 시작
         clone.animationPhase = 'swapping';
         clone.swapStartTime = currentTime;
-      }    } else if (clone.animationPhase === 'swapping') {
+        console.log("🔄 Audio completed + 1s delay passed, starting subject movement");
+      }} else if (clone.animationPhase === 'swapping') {
       const swapDuration = 1500; // 1.5초로 짧게 조정 (더 빠른 애니메이션)
       const swapElapsedTime = currentTime - clone.swapStartTime;
         if (swapElapsedTime < swapDuration) {
@@ -2221,37 +2230,40 @@ function triggerBounceAnimationForWords(sentenceObject, isQuestion) {
   if (firstLineWords.length === 0) {
     console.log("❌ No words found in first line for sentence type");
     return;
-  }
-
-  let relevantWordRects = [];
+  }  let relevantWordRects = [];
   
-  if (isQuestion) {
-    // 의문사만: 첫 번째 줄에서 실제 의문사인 단어들만
+  // isQuestion 파라미터는 이제 사용하지 않고 문장 유형으로만 판단
+  if (isCurrentlyQuestion) {
+    // 질문 문장에서 "의문사+조동사+주어" 순서대로 바운스
+    relevantWordRects = firstLineWords.filter((wordRect, index) => {
+      const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
+      // 첫 번째 단어는 의문사
+      if (index === 0) {
+        const isWhWord = isWh(cleanWord);
+        console.log(`🔍 Checking first word "${wordRect.word}" (clean: "${cleanWord}") - isWh: ${isWhWord}`);
+        return isWhWord;
+      }
+      // 두 번째 단어는 조동사
+      if (index === 1) {
+        const isAuxWord = isAux(cleanWord);
+        console.log(`🔍 Checking second word "${wordRect.word}" (clean: "${cleanWord}") - isAux: ${isAuxWord}`);
+        return isAuxWord;
+      }
+      // 세 번째 단어는 주어 (의문사도 조동사도 동사도 아닌 경우)
+      if (index === 2) {
+        const isSubject = !isWh(cleanWord) && !isAux(cleanWord) && !isVerb(cleanWord);
+        console.log(`🔍 Checking third word "${wordRect.word}" (clean: "${cleanWord}") - isSubject: ${isSubject}`);
+        return isSubject;
+      }
+      return false;
+    });
+  } else if (isCurrentlyAnswer) {
+    // 답변 문장에서 조동사만: 첫 번째 줄에서 조동사인 단어들만
     relevantWordRects = firstLineWords.filter(wordRect => {
       const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
-      const isWhWord = isWh(cleanedWord);
-      console.log(`🔍 Checking word "${wordRect.word}" (clean: "${cleanedWord}") - isWh: ${isWhWord}`);
-      return isWhWord;
-    });
-  } else {
-    if (isCurrentlyQuestion) {
-      // 질문 문장에서 조동사+주어만: 첫 번째 줄에서 조동사이거나 주어인 단어들만
-      relevantWordRects = firstLineWords.filter(wordRect => {
-        const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
-        const isAuxWord = isAux(cleanedWord);
-        const isSubject = !isWh(cleanedWord) && !isAux(cleanedWord) && !isVerb(cleanedWord);
-        console.log(`🔍 Checking word "${wordRect.word}" (clean: "${cleanedWord}") - isAux: ${isAuxWord}, isSubject: ${isSubject}`);
-        return isAuxWord || isSubject;
-      });
-    } else if (isCurrentlyAnswer) {
-      // 답변 문장에서 조동사만: 첫 번째 줄에서 조동사인 단어들만
-      relevantWordRects = firstLineWords.filter(wordRect => {
-        const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
-        const isAuxWord = isAux(cleanedWord);
-        console.log(`🔍 Checking answer word "${wordRect.word}" (clean: "${cleanWord}") - isAux: ${isAuxWord}`);
-        return isAuxWord;
-      });
-    }
+      const isAuxWord = isAux(cleanWord);
+      console.log(`🔍 Checking answer word "${wordRect.word}" (clean: "${cleanWord}") - isAux: ${isAuxWord}`);
+      return isAuxWord;    });
   }
   
   if (relevantWordRects.length === 0) {
@@ -2819,15 +2831,14 @@ function drawCenterSentence() {
         playButtonRectQuestion = { x: btnX, y: playButtonQuestionY, w: btnW_forHitbox, h: btnH_forHitbox };
         if (showPlayButtonQuestion) {
             drawPlayButton(playButtonRectQuestion, currentVisualScaleForHitbox);
-        }
-
-        if (showTranslationForQuestion && currentQuestionSentenceIndex !== null && translations[currentQuestionSentenceIndex]) {
+        }        if (showTranslationForQuestion && currentQuestionSentenceIndex !== null && translations[currentQuestionSentenceIndex]) {
             ctx.save();
             ctx.globalAlpha = centerAlpha;
             ctx.font = translationFont;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.shadowColor = "#111"; ctx.shadowBlur = 4;
+            ctx.fillStyle = "#16c016"; // 녹색으로 색상 설정
             const translationTextHeight = parseFloat(translationFont.match(/(\d*\.?\d*)px/)[1]);
             const translationBelowY = questionDrawOutput.lastY + 10 + translationTextHeight / 2;
             ctx.fillText(translations[currentQuestionSentenceIndex], canvas.width / 2, translationBelowY);
@@ -2854,15 +2865,13 @@ function drawCenterSentence() {
 
         let answerBlockContext = { verbColored: false, auxColored: false, verbFoundInPattern2: false };
         const answerDrawOutput = drawSingleSentenceBlock(currentAnswerSentence, topYForAnswerBlock, false, answerBlockContext);
-        newWordRects.push(...answerDrawOutput.wordRects);
-
-        if (showTranslationForAnswer && currentAnswerSentenceIndex !== null && translations[currentAnswerSentenceIndex]) {
+        newWordRects.push(...answerDrawOutput.wordRects);        if (showTranslationForAnswer && currentAnswerSentenceIndex !== null && translations[currentAnswerSentenceIndex]) {
             ctx.save();
             ctx.globalAlpha = centerAlpha;
             ctx.font = translationFont;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillStyle = "#2E8B57";
+            ctx.fillStyle = "#16c016"; // 답변 문장도 녹색으로 변경
             ctx.shadowColor = "#111"; ctx.shadowBlur = 4;
             const translationTextHeight = parseFloat(translationFont.match(/(\d*\.?\d*)px/)[1]);
             const translationBelowY = answerDrawOutput.lastY + 3 + translationTextHeight / 2;
@@ -3416,20 +3425,12 @@ function updateFireworks() {
                             if (roleOfNewSentence === 'question') {
                                 // 첫번째 문장(질문): "의문사"와 "조동사+주어"를 바운스
                                 console.log("🏀 Triggering bounce animations for question sentence during auto TTS");
-                                
-                                // 의문사 먼저 바운스 (질문 읽기 타이밍에 맞춤)
+                                  // 질문 문장의 "의문사+조동사+주어" 순서대로 바운스 애니메이션 적용
                                 setTimeout(() => {
                                     if (currentQuestionSentence) {
-                                        triggerBounceAnimationForWords(currentQuestionSentence, true); // 의문사
+                                        triggerBounceAnimationForWords(currentQuestionSentence, false); // 이제 한 번만 호출
                                     }
-                                }, 100); // 음성 시작 후 100ms 후 의문사 바운스
-                                
-                                // 조동사+주어는 조금 더 지연해서 바운스 (읽기 진행에 맞춤)
-                                setTimeout(() => {
-                                    if (currentQuestionSentence) {
-                                        triggerBounceAnimationForWords(currentQuestionSentence, false); // 조동사+주어
-                                    }
-                                }, 600); // 음성 시작 후 600ms 후 조동사+주어 바운스
+                                }, 200); // 음성 시작 후 200ms 후 바운스 시작
                                 
                             } else if (roleOfNewSentence === 'answer') {
                                 // 두번째 문장(답변): "조동사"를 바운스
