@@ -1,0 +1,3 @@
+@echo off
+echo VS Code 자동 백업 시스템 시작...
+node auto-backup.js

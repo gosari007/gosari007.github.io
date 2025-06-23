@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>  <meta charset="UTF-8" />  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Galaga</title>
+  <link rel="stylesheet" href="style.css?v=1.16" />
+</head>
+<body>  <!-- 드롭다운 버튼 (START 버튼 왼쪽) -->
+  <div id="sentenceDropdown">
+    <button id="dropdownBtn">&#9662;</button>
+    <div id="sentenceList" class="sentence-list">
+      <!-- 여기에 문장 목록이 동적으로 추가됩니다 -->
+    </div>
+  </div>
+  
+  <!-- 상단 컨트롤 (중앙 고정) -->
+  <div id="topControls">
+    <button id="startBtn" class="start-btn">START</button>
+    <button id="pauseBtn" class="pause-btn">PAUSE</button>
+    <button id="stopBtn" class="stop-btn">STOP</button>
+  </div>  <!-- 볼륨버튼: 오른쪽 상단에 별도 위치 -->
+  <button id="volumeBtn" class="volume-btn">🔊</button>
+
+  <!-- 문장 이미지 영역: 상단 메뉴 아래에 위치 -->
+  <div id="sentenceImage" class="sentence-image">
+    <img id="sentenceImageDisplay" src="" alt="">
+  </div>
+
+  <!-- 게임 캔버스 -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- 김 효과를 위한 숨겨진 비디오 요소 -->  <video id="coffeeSteamVideo" src="images/coffee6.webm" autoplay loop muted playsinline style="display: none;"></video>
+  <script src="script.js"></script>
+  <!-- dropdown.js는 비활성화 상태이므로 제거 -->
+  <script src="startup.js"></script>
+</body>
+</html>

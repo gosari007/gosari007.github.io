@@ -1,0 +1,32 @@
+{
+  // Live Server를 로컬 IP로 바인딩
+  "liveServer.settings.host": "0.0.0.0",
+  // 네트워크 상의 다른 기기에서 접속 허용
+  "liveServer.settings.useLocalIp": true,
+  // 필요에 따라 기본 브라우저 자동 열기 끄기
+  "liveServer.settings.NoBrowser": true,
+  
+  // 자동 저장 설정 (변경 후 0.5초 후에 저장)
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 500,
+  
+  // 파일 감시 설정 개선
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true
+  },
+  
+  // 파일 변경 감지 폴링 간격 설정 (밀리초)
+  "files.usePolling": true,
+  "files.pollingInterval": 1000,
+  
+  // 백업 설정
+  "files.hotExit": "onExitAndWindowClose",
+  "workbench.editor.closeOnFileDelete": false,
+  
+  // 안정성 향상을 위한 추가 설정
+  "files.restoreUndoStack": true,
+  "editor.formatOnSave": false,
+  "editor.formatOnPaste": false
+}
