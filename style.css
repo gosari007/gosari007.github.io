@@ -4,7 +4,7 @@
 }
 
 /* 이미지 관련 요소들에 테두리 제거 */
-img, image, #sentenceImage {
+img, image, #sentenceImage, #sentenceVideo {
   border: 0 none transparent !important;
   outline: 0 none transparent !important;
   -webkit-tap-highlight-color: transparent;
@@ -219,7 +219,7 @@ html, body {
   outline: 0 none transparent !important;
 }
 
-#sentenceImage {
+#sentenceImage, #sentenceVideo {
   max-width: 100.24vw; /* 화면 너비의 100.24%를 넘지 않도록 설정 (마지막 1% 증가) */
   max-height: 50.13vh; /* 화면 높이의 50.13%를 넘지 않도록 설정 (마지막 1% 증가) */
   border-radius: 0 !important; /* 모서리 둥글기 완전 제거 */
@@ -232,8 +232,8 @@ html, body {
   transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 1.5초 ease-out 애니메이션 */
 }
 
-/* 이미지가 나타날 때의 애니메이션 클래스 */
-#sentenceImage.show {
+/* 이미지/비디오가 나타날 때의 애니메이션 클래스 */
+#sentenceImage.show, #sentenceVideo.show {
   transform: scale(1); /* 원본 크기로 확대 */
   opacity: 1; /* 완전 불투명으로 변경 */
 }
