@@ -4,10 +4,26 @@
 }
 
 /* 이미지 관련 요소들에 테두리 제거 */
-img, image {
-  border: none !important;
-  outline: none !important;
+img, image, #sentenceImage {
+  border: 0 none transparent !important;
+  outline: 0 none transparent !important;
   -webkit-tap-highlight-color: transparent;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* 테두리 없음 특별 클래스 - 이미지의 흰 테두리 완전 제거용 */
+.no-border-at-all {
+  border: 0 none transparent !important;
+  outline: 0 none transparent !important;
+  -webkit-tap-highlight-color: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background-clip: content-box !important;
 }
 
 html, body {
@@ -193,20 +209,24 @@ html, body {
 
 #sentenceImageContainer {
   position: fixed;
-  top: 80px; /* 메뉴 아이콘 바로 아래에 위치하도록 조정 */
+  top: 55px; /* 메뉴 아이콘 바로 아래에 위치하도록 조정 (25px 위로 이동) */
   left: 50%;
   transform: translateX(-50%);
   z-index: 15; /* 다른 요소들 위에 오도록 설정 */
   display: none; /* 기본적으로 숨김 */
+  border: 0 none transparent !important;
+  box-shadow: none !important;
+  outline: 0 none transparent !important;
 }
 
 #sentenceImage {
-  max-width: 80vw; /* 화면 너비의 80%를 넘지 않도록 설정 */
-  max-height: 40vh; /* 화면 높이의 40%를 넘지 않도록 설정 */
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-  border: none !important; /* 테두리 제거 */
-  outline: none !important; /* 외곽선 제거 */
+  max-width: 92.61vw; /* 화면 너비의 92.61%를 넘지 않도록 설정 (추가 5% 증가) */
+  max-height: 46.31vh; /* 화면 높이의 46.31%를 넘지 않도록 설정 (추가 5% 증가) */
+  border-radius: 0 !important; /* 모서리 둥글기 완전 제거 */
+  box-shadow: none !important; /* 그림자 완전 제거 */
+  border: 0 none transparent !important; /* 테두리 완전 제거 */
+  outline: 0 none transparent !important; /* 외곽선 완전 제거 */
+  background-color: transparent !important; /* 배경색 투명 */
   transform: scale(0); /* 초기 크기를 0으로 설정 */
   opacity: 0; /* 초기 투명도를 0으로 설정 */
   transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 1.5초 ease-out 애니메이션 */
