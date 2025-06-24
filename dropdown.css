@@ -59,7 +59,7 @@
 /* 문장 항목 */
 .sentence-item {
   color: white;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 2px; /* 왼쪽 패딩을 줄여서 전체 문장을 좌측으로 이동 */
   cursor: pointer;
   text-align: left;
   font-size: 17.1px;
@@ -80,6 +80,8 @@
   min-width: 40px;
   margin-right: 8px;
   font-weight: bold;
-  color: #16c016;
+  color: white;
   font-size: 17.1px;
 }
+
+

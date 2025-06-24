@@ -1,3 +1,15 @@
+/* 전체 스타일 리셋 - 모든 요소의 테두리와 외곽선 제거 */
+* {
+  box-sizing: border-box;
+}
+
+/* 이미지 관련 요소들에 테두리 제거 */
+img, image {
+  border: none !important;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -146,10 +158,8 @@ html, body {
   margin-bottom: 10px; /* 기본 간격을 10px로 설정 */
 }
 
-/* 홀수 문장(의문문) 스타일 - 배경색 제거 */
+/* 홀수 문장(의문문)에 대한 스타일 - 배경색 제거 */
 .question-sentence {
-  /* background-color 제거 */
-  color: #16c016; /* 녹색으로 색상 변경 */
   text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5); /* 텍스트에 약간의 그림자로 가독성 향상 */
   font-weight: 500; /* 약간 더 굵게 */
   letter-spacing: 0.2px; /* 글자 간격 살짝 넓힘 */
@@ -158,8 +168,7 @@ html, body {
 /* 짝수 번호 문장(답변)에 아래 여백 추가 - 대화 쌍 구분용 */
 .answer-sentence {
   margin-bottom: 35px !important; /* 기본 10px에서 크게 증가한 35px로 설정하고 !important 추가 */
-  /* border-bottom 제거 */
-  padding-bottom: 5px; /* 여백 유지 */
+  padding-bottom: 5px; /* 텍스트 아래 여백 유지 */
 }
 
 .sentence-item:hover {
@@ -167,23 +176,9 @@ html, body {
   border-radius: 3px; /* hover 상태에서도 둥근 모서리 유지 */
 }
 
-/* 홀수/짝수 문장 스타일 구분 - 배경색 제거 */
+/* 홀수/짝수 문장 스타일 구분 */
 .sentence-item.question-sentence {
-  /* background-color 제거 */
-  color: #16c016; /* 녹색으로 색상 변경 */
-  border-radius: 3px; /* 모서리 둥글게 유지 */
-}
-
-/* 의문사를 녹색으로 표시 (Where, Why, Who, What, How, When) */
-.question-word {
-  color: #16c016; /* 녹색으로 설정 */
-  font-weight: bold;
-}
-
-/* 조동사를 파란색으로 표시 */
-.modal-verb {
-  color: #1E90FF; /* 파란색(Dodger Blue)으로 설정 */
-  font-weight: bold;
+  border-radius: 3px; /* 둥근 모서리 유지 */
 }
 
 /* 문장 번호 스타일 */
@@ -192,25 +187,33 @@ html, body {
   min-width: 40px;
   margin-right: 3px; /* 8px에서 5px 줄여 3px로 변경하여 문장 시작을 좌측으로 5px 이동 */
   font-weight: bold;
-  color: #FFFFFF; /* 녹색에서 흰색으로 변경 */
-  font-size: 14.54px; /* 17.1px에서 15% 줄임 */
+  color: #16c016;
+  font-size: 17.1px; /* 기존 크기의 95%로 줄임 (18px의 95% = 17.1px) */
 }
 
-/* 문장 이미지 영역 스타일 */
-.sentence-image {
+#sentenceImageContainer {
   position: fixed;
-  top: 50px; /* 상단 메뉴 아래 위치 */
+  top: 80px; /* 메뉴 아이콘 바로 아래에 위치하도록 조정 */
   left: 50%;
   transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
-  justify-content: center;
-  pointer-events: none; /* 이미지가 게임 조작을 방해하지 않도록 함 */
+  z-index: 15; /* 다른 요소들 위에 오도록 설정 */
+  display: none; /* 기본적으로 숨김 */
 }
 
-#sentenceImageDisplay {
-  max-width: 90%;
-  max-height: 180px;
-  opacity: 0;
-  transition: opacity 0.5s ease;
+#sentenceImage {
+  max-width: 80vw; /* 화면 너비의 80%를 넘지 않도록 설정 */
+  max-height: 40vh; /* 화면 높이의 40%를 넘지 않도록 설정 */
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  border: none !important; /* 테두리 제거 */
+  outline: none !important; /* 외곽선 제거 */
+  transform: scale(0); /* 초기 크기를 0으로 설정 */
+  opacity: 0; /* 초기 투명도를 0으로 설정 */
+  transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 1.5초 ease-out 애니메이션 */
+}
+
+/* 이미지가 나타날 때의 애니메이션 클래스 */
+#sentenceImage.show {
+  transform: scale(1); /* 원본 크기로 확대 */
+  opacity: 1; /* 완전 불투명으로 변경 */
 }

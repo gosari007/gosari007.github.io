@@ -8,12 +8,6 @@ canvas.height = window.innerHeight;
 // --- START: New variable and function for top offset calculation ---
 let topOffset = 0;
 
-// 문장 이미지 표시 관련 변수
-let currentSentenceImage = null;
-let sentenceImageElement = null;
-let sentenceImageTimeout = null;
-let currentSentenceNumber = 0;  // 현재 표시 중인 문장 번호
-
 function calculateTopOffset() {
   const topControlsElement = document.getElementById('topControls');
   if (topControlsElement) {
@@ -22,63 +16,8 @@ function calculateTopOffset() {
     topOffset = 0; // Default if element not found
   }
 }
-
-// 문장 이미지 초기화 함수
-function initializeSentenceImage() {
-  sentenceImageElement = document.getElementById('sentenceImageDisplay');
-  if (!sentenceImageElement) {
-    console.warn('문장 이미지 요소를 찾을 수 없습니다.');
-    return;
-  }
-  
-  // 초기 상태는 화면에 표시하지 않음
-  hideSentenceImage();
-}
-
-// 문장 이미지 표시 함수
-function showSentenceImage(sentenceNumber) {
-  if (!sentenceImageElement) return;
-  
-  // sentenceNumber는 0부터 시작하는 인덱스임
-  // 실제 문장 번호로 변환 (0->1번 문장, 1->2번 문장, 2->3번 문장...)
-  const actualSentenceNumber = sentenceNumber + 1;
-  
-  // 홀수 문장 번호일 때만 이미지 표시 (1, 3, 5, ...)
-  if (actualSentenceNumber % 2 === 1) {
-    // 홀수 문장 번호에 해당하는 이미지 번호
-    const imageNumber = actualSentenceNumber;
-    console.log("이미지 표시: 문장 번호", actualSentenceNumber, "이미지 번호:", imageNumber);
-    const imagePath = `images/${imageNumber}.jpg`;
-    
-    sentenceImageElement.src = imagePath;
-    sentenceImageElement.style.opacity = '1';
-    currentSentenceImage = imagePath;
-    currentSentenceNumber = sentenceNumber;
-    
-    // 자동 숨김 타이머 제거 - 이미지는 다음 번 문장쌍이 나타날 때까지 유지
-    if (sentenceImageTimeout) {
-      clearTimeout(sentenceImageTimeout);
-      sentenceImageTimeout = null;
-    }
-  }
-}
-
-// 문장 이미지 숨기기 함수
-function hideSentenceImage() {
-  if (!sentenceImageElement) return;
-  
-  console.log("이미지 숨김 함수 호출됨");
-  sentenceImageElement.style.opacity = '0';
-  currentSentenceImage = null;
-  if (sentenceImageTimeout) {
-    clearTimeout(sentenceImageTimeout);
-    sentenceImageTimeout = null;
-  }
-}
-
 // Initial calculation attempt. More reliable calculation in startGame and resize.
 calculateTopOffset();
-initializeSentenceImage();
 // --- END: New variable and function for top offset calculation ---
 
 
@@ -832,7 +771,7 @@ async function getWordTranslation(word, targetLang = 'ko') {
     "hadn’t": "～한 적이 없었다 (과거완료)", "hadnt": "～한 적이 없었다 (과거완료)",
     "isn’t": "～이 아니다", "isnt": "～이 아니다",
     "aren’t": "～들이 아니다", "arent": "～들이 아니다",
-    "dreamed": "꿈꿨다", "dreamt": "꿈꿨다",
+    
     "giggling": "킥킥 웃는",
     "slip": "미끄러짐/실수",
     "at": "~에서/~에게",
@@ -1699,7 +1638,8 @@ function createSubjectAuxClone(subjectAnimation, auxAnimation) {
     console.log("⛔ enableCloneGeneration이 false: 주어+조동사 복제본 생성 취소");
     return;
   }
-    // 현재 조동사 애니메이션의 고점 위치 계산
+  
+  // 현재 조동사 애니메이션의 고점 위치 계산
   const currentAnimationHighPoint = auxAnimation.targetWordRect.y - auxAnimation.maxHeight;
   
   // 조동사 + 주어 텍스트 결합 (원래 순서 유지)
@@ -1715,16 +1655,7 @@ function createSubjectAuxClone(subjectAnimation, auxAnimation) {
       const lastChar = questionClone.charPositions[questionClone.charPositions.length - 1];
       targetX = lastChar.x + lastChar.width + SUBJECT_AUX_CLONE_OFFSET_X;
     }
-  }
-    // 조동사와 주어의 원래 위치를 정확하게 저장
-  const auxOriginalX = auxAnimation.targetWordRect.x;
-  const subjectOriginalX = subjectAnimation.targetWordRect.x;
-  
-  // 표준 공백 너비 계산 (1.2배로 확장하여 일관성 유지)
-  ctx.font = englishFont;
-  const standardSpaceWidth = ctx.measureText(" ").width * 1.2;
-  
-  const clone = {
+  }  const clone = {
     subjectWord: subjectAnimation.wordText,
     auxWord: auxAnimation.wordText,
     combinedText: combinedText,
@@ -1734,7 +1665,7 @@ function createSubjectAuxClone(subjectAnimation, auxAnimation) {
     currentY: currentAnimationHighPoint,
     charPositions: [], // 결합된 텍스트의 각 문자 위치
     createdTime: performance.now(),
-    animationPhase: 'initial', // 수정: 'moving_up'에서 'initial'로 변경
+    animationPhase: 'moving_up',
     alpha: 1.0,
     waitStartTime: 0, // 대기 시작 시간
     swapStartTime: 0, // 위치 교환 시작 시간
@@ -1742,13 +1673,9 @@ function createSubjectAuxClone(subjectAnimation, auxAnimation) {
     auxLength: auxAnimation.wordText.length, // 조동사 길이
     spaceIndex: auxAnimation.wordText.length, // 공백 위치 인덱스
     subjectWidth: 0, // 주어 너비 (계산될 예정)
-    auxWidth: 0,    // 조동사 너비 (계산될 예정)
-    auxOriginalX: auxOriginalX,     // 조동사의 원래 X 위치
-    subjectOriginalX: subjectOriginalX, // 주어의 원래 X 위치
-    standardSpaceWidth: standardSpaceWidth, // 표준 공백 너비
-    initialDelay: 100 // 초기 약간의 지연 추가 - "움찔" 방지용
+    auxWidth: 0    // 조동사 너비 (계산될 예정)
   };
-  // 결합된 텍스트의 문자 위치 계산
+    // 결합된 텍스트의 문자 위치 계산
   ctx.font = englishFont;
   const letters = combinedText.split('');
   let currentX = clone.originalX;
@@ -1756,8 +1683,9 @@ function createSubjectAuxClone(subjectAnimation, auxAnimation) {
   // 조동사와 주어의 너비를 계산하기 위한 변수
   let auxWidthSum = 0;
   let subjectWidthSum = 0;
+  let isInAux = true; // 조동사 부분인지 여부
+  let isSpace = false; // 공백인지 여부
   
-  // 원본 텍스트에서 정확한 문자 위치 정보 유지
   letters.forEach((char, index) => {
     const charWidth = ctx.measureText(char).width;
     
@@ -1771,9 +1699,8 @@ function createSubjectAuxClone(subjectAnimation, auxAnimation) {
     clone.charPositions.push({
       char: char,
       x: currentX,
-      originalX: currentX, // 나중에 비교를 위해 원래 X 위치도 저장
-      originalY: clone.originalY,
-      currentY: clone.originalY,
+      originalY: currentAnimationHighPoint,
+      currentY: currentAnimationHighPoint,
       width: charWidth
     });
     currentX += charWidth;
@@ -1788,45 +1715,20 @@ function createSubjectAuxClone(subjectAnimation, auxAnimation) {
 
 // 주어+조동사 복제본 업데이트 함수
 function updateSubjectAuxClones(currentTime) {
-  // 애니메이션 디버그를 위한 로그 (낮은 빈도로)
-  if (Math.random() < 0.01 && subjectAuxClones.length > 0) {
-    console.log(`🔄 SubjectAux clones being updated: ${subjectAuxClones.length}`);
-    console.log(`   Phase: ${subjectAuxClones[0].animationPhase}`);
-  }
-  
   for (let i = subjectAuxClones.length - 1; i >= 0; i--) {
     const clone = subjectAuxClones[i];
     const elapsedTime = currentTime - clone.createdTime;
     
-    // 초기 단계: 조동사와 주어를 정확히 원래 위치에서 시작하도록 함 (ANTI-TWITCH)
-    if (clone.animationPhase === 'initial') {
-      // 초기 설정에서 "움찔" 현상 방지를 위한 대기 시간
-      if (elapsedTime >= clone.initialDelay) {
-        clone.animationPhase = 'moving_up';
-        
-        // 문자 위치 재설정 (위치 틀림 방지)
-        clone.charPositions.forEach(cp => {
-          // 원래 위치 유지 (변경 금지)
-          cp.x = cp.originalX;
-          cp.currentY = clone.originalY;
-        });
-        
-        console.log("💫 Initial phase completed, starting upward movement");
-      }
-    } else if (clone.animationPhase === 'moving_up') {
-      const moveUpDuration = 400; // 400ms 동안 부드럽게 위로 이동
+    if (clone.animationPhase === 'moving_up') {
+      const moveUpDuration = 300; // 300ms 동안 위로 이동
       if (elapsedTime < moveUpDuration) {
-        // 부드러운 애니메이션을 위한 easeOutCubic
         const t = elapsedTime / moveUpDuration;
         const easedT = 1 - Math.pow(1 - t, 3); // ease-out cubic
-        
-        // Y 위치만 변경하고 X 위치는 원래대로 유지
         clone.currentY = clone.originalY + (clone.targetY - clone.originalY) * easedT;
         
-        // 각 문자의 Y 위치만 업데이트 (X 위치는 그대로 유지)
+        // 각 문자의 위치도 업데이트
         clone.charPositions.forEach(cp => {
           cp.currentY = cp.originalY + (clone.targetY - clone.originalY) * easedT;
-          // X 위치는 변경하지 않음 - 원래대로 유지
         });
       } else {
         // 이동 완료, 잠시 대기 상태로 전환
@@ -1834,37 +1736,28 @@ function updateSubjectAuxClones(currentTime) {
         clone.waitStartTime = currentTime;
         clone.currentY = clone.targetY;
         
-        // 각 문자별 Y 위치만 업데이트하고 X 위치는 원래대로 유지
+        // 각 문자별 원래 위치 저장
         clone.charPositions.forEach(cp => {
           cp.currentY = clone.targetY;
-          // originalX는 이미 설정됐으므로 변경하지 않음
-          cp.originalY = cp.currentY; // Y 위치만 업데이트
-        });      }} else if (clone.animationPhase === 'waiting') {
-      // 오디오 재생 완료 확인
-      const audioFinished = !currentSentenceAudio || currentSentenceAudio.ended || currentSentenceAudio.paused;
-      // 오디오 종료 후 1초 대기 후 위치 교환 시작
-      const waitDuration = audioFinished ? 1000 : 200; // 오디오가 끝났으면 1초, 아니면 계속 짧게 체크
-      const waitElapsedTime = audioFinished ? (currentTime - clone.waitStartTime) : 0;
-      
-      // 오디오가 끝나지 않은 경우 waitStartTime 계속 업데이트
-      if (!audioFinished) {
-        clone.waitStartTime = currentTime;
-        return; // 오디오가 끝날 때까지 대기
+          cp.originalX = cp.x;
+          cp.originalY = cp.currentY;
+        });
       }
-
-      // 오디오 종료 후 1초 대기 시간이 지나면 위치 교환 시작
+    } else if (clone.animationPhase === 'waiting') {
+      // 2초 대기 후 위치 교환 시작
+      const waitDuration = 2000; // 2초(2000ms) 대기
+      const waitElapsedTime = currentTime - clone.waitStartTime;
+      
       if (waitElapsedTime >= waitDuration) {
         // 대기 완료, 위치 교환 애니메이션 시작
         clone.animationPhase = 'swapping';
         clone.swapStartTime = currentTime;
-        console.log("🔄 Audio completed + 1s delay passed, starting subject movement");
-      }} else if (clone.animationPhase === 'swapping') {
-      const swapDuration = 1500; // 1.5초로 짧게 조정 (더 빠른 애니메이션)
+      }    } else if (clone.animationPhase === 'swapping') {
+      const swapDuration = 2000; // 2초(2000ms) 동안 위치 교환
       const swapElapsedTime = currentTime - clone.swapStartTime;
         if (swapElapsedTime < swapDuration) {
         const t = swapElapsedTime / swapDuration;
-        // 더 부드러운 애니메이션을 위해 easeInOutQuad 사용
-        const easedT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const easedT = t; // 선형 애니메이션으로 시작
         
         // 조동사와 주어 부분 나누기
         // 조동사 부분(0 ~ auxLength)
@@ -1874,149 +1767,81 @@ function updateSubjectAuxClones(currentTime) {
         // 주어 부분(auxLength+1 ~ end)
         const subjectChars = clone.charPositions.slice(clone.auxLength + 1);
         
-        // 핵심 문제 해결: 정확한 원본 위치 값을 사용
-        // 원본 단어 시작 지점에서 애니메이션 시작
-        const auxStartX = auxChars[0].originalX; // 조동사의 정확한 시작 위치
-        const subjectStartX = subjectChars[0].originalX; // 주어의 정확한 시작 위치
+        // 원래 위치 계산
+        const auxStartX = clone.charPositions[0].originalX;
+        const subjectStartX = clone.charPositions[clone.auxLength + 1].originalX;
+        const auxWidth = auxChars.reduce((sum, c) => sum + c.width, 0);
+        const subjectWidth = subjectChars.reduce((sum, c) => sum + c.width, 0);
         
-        // 스왑 후 최종 위치 계산
-        // 주어는 조동사 자리로, 조동사는 주어 자리로 + 공백
-        const finalSubjectX = auxStartX; // 주어가 조동사 위치로
+        // 주어 전체 블록 이동 거리 계산
+        const subjectDistanceToMove = auxStartX - subjectStartX;
         
-        // 반원 계산을 위한 변수 (높이 줄여서 부드럽게)
-        const arcRadius = 30; // 반원의 반지름 (약간 낮게 설정)
+        // 조동사 전체 블록 이동 거리 계산
+        const auxDistanceToMove = (subjectStartX - auxStartX) + (subjectWidth - auxWidth + spaceChar.width);
+        
+        // 반원 계산을 위한 변수
+        const arcRadius = 40; // 반원의 반지름
         const baseY = clone.targetY; // 기본 Y 위치
         
-        // 1. 주어 문자들 이동 (아크 모션)
-        if (subjectChars.length > 0) {
-          // 주어 단어 시작 위치와 최종 위치 간 보간
-          const currentSubjectStartX = subjectStartX + (finalSubjectX - subjectStartX) * easedT;
+        // 주어 문자들 이동 (그룹으로 이동하면서 반원을 그리며)
+        subjectChars.forEach((cp, idx) => {
+          const relativePosition = cp.originalX - subjectStartX; // 주어 시작점으로부터 상대적 위치
+          cp.x = subjectStartX + relativePosition + (subjectDistanceToMove * easedT);
           
-          // 주어 내의 각 문자의 상대적 위치 유지하며 이동
-          let relativeOffsets = [];
-          
-          // 첫 번째 루프: 상대적 오프셋 계산
-          subjectChars.forEach((cp, idx) => {
-            // 처음 문자부터의 상대적 오프셋 보존
-            const offset = idx === 0 ? 0 : cp.originalX - subjectChars[0].originalX;
-            relativeOffsets.push(offset);
-          });
-          
-          // 두 번째 루프: 애니메이션 적용
-          subjectChars.forEach((cp, idx) => {
-            // 현재 위치 = 현재 주어 시작 위치 + 원래 상대 오프셋
-            cp.x = currentSubjectStartX + relativeOffsets[idx];
-            
-            // 반원 형태로 이동 (위에서 호를 그리며)
-            const yOffset = Math.sin(easedT * Math.PI) * arcRadius;
-            cp.currentY = baseY - yOffset; // 위로 올라갔다가 내려옴
-          });
-          
-          // 공백 위치 조정 (주어 뒤에 표준 간격으로 배치)
-          const lastSubjectChar = subjectChars[subjectChars.length - 1];
-          spaceChar.x = lastSubjectChar.x + lastSubjectChar.width;
-          spaceChar.currentY = subjectChars[0].currentY; // 주어와 같은 Y 위치
-        }
+          // 반원 형태로 이동 (sin 함수 사용)
+          // t가 0→1로 증가하므로 sin(t*π)는 0→1→0의 형태
+          // 이를 활용하여 Y축으로 위로 올라갔다가 내려오는 반원 형태 구현
+          const yOffset = Math.sin(easedT * Math.PI) * arcRadius;
+          cp.currentY = baseY - yOffset; // 위로 올라갔다가 내려옴
+        });
         
-        // 2. 조동사 문자들은 수평으로 부드럽게 미끄러지듯 이동
-        if (auxChars.length > 0) {
-          // 공백 다음 위치 계산
-          const spaceEndX = spaceChar.x + spaceChar.width;
-          
-          // 조동사의 최종 위치는 공백 다음 + 표준 공백 너비
-          const finalAuxStartX = spaceEndX;
-          
-          // 조동사 단어의 현재 시작 위치 계산 (부드러운 이동)
-          const currentAuxStartX = auxStartX + (finalAuxStartX - auxStartX) * easedT;
-          
-          // 조동사 내의 각 문자의 상대적 위치 유지하며 이동
-          let auxRelativeOffsets = [];
-          
-          // 첫 번째 루프: 상대적 오프셋 계산
-          auxChars.forEach((cp, idx) => {
-            const offset = idx === 0 ? 0 : cp.originalX - auxChars[0].originalX;
-            auxRelativeOffsets.push(offset);
-          });
-          
-          // 두 번째 루프: 애니메이션 적용
-          auxChars.forEach((cp, idx) => {
-            // 수평 이동만 (Y 위치는 고정)
-            cp.x = currentAuxStartX + auxRelativeOffsets[idx];
-            cp.currentY = baseY; // 일정한 Y 높이 유지
-          });
-        }      } else {
+        // 공백 위치 조정 (주어 뒤에 붙어서 이동하며 같은 반원 형태)
+        const lastSubjectChar = subjectChars[subjectChars.length - 1];
+        spaceChar.x = lastSubjectChar ? lastSubjectChar.x + lastSubjectChar.width : subjectStartX + (subjectDistanceToMove * easedT);
+        const spaceYOffset = Math.sin(easedT * Math.PI) * arcRadius;
+        spaceChar.currentY = baseY - spaceYOffset;
+        
+        // 조동사 문자들 이동 (그룹으로 수평 이동)
+        auxChars.forEach((cp, idx) => {
+          const relativePosition = cp.originalX - auxStartX; // 조동사 시작점으로부터 상대적 위치
+          cp.x = auxStartX + relativePosition + (auxDistanceToMove * easedT);
+          // Y 위치 유지 (수평 이동)
+          cp.currentY = baseY;
+        });} else {
         // 교환 완료, 정지 상태로 전환
         clone.animationPhase = 'stationary';
         
-        // 이 부분에서 isActionLocked 해제 및 게임 진행 상태 확인
-        console.log("✅ Subject-Aux swap animation completed");
-        
-        if (isActionLocked) {          
-          console.log("🔓 Action lock released after subject-aux swap completion");
-          isActionLocked = false;
-        }
-        
-        // 게임이 여전히 실행 중인지 확인 및 강제 재시작
-        if (isGameRunning && !isGamePaused) {
-          // 게임이 멈췄을 수 있으므로 게임 루프를 강제로 유지
-          requestAnimationFrame(gameLoop);
-          console.log("🎮 Ensuring game loop continues after swap animation");
-        }
-        
-        // 최종 위치 설정 - 완벽한 위치 교환 구현
+        // 최종 위치 설정 (완전히 교환된 상태)
+        // 조동사 부분
         const auxChars = clone.charPositions.slice(0, clone.auxLength);
+        // 공백
         const spaceChar = clone.charPositions[clone.auxLength];
+        // 주어 부분
         const subjectChars = clone.charPositions.slice(clone.auxLength + 1);
         
-        // 주어와 조동사의 정확한 최종 위치 계산을 위한 준비
-        if (subjectChars.length > 0 && auxChars.length > 0) {
-          // 1. 먼저 주어를 조동사 위치로 정확하게 배치
-          const auxOriginalX = auxChars[0].originalX; // 조동사의 정확한 원래 위치
-          
-          // 주어의 상대적 오프셋 계산
-          const subjectRelativeOffsets = [];
-          subjectChars.forEach((cp, idx) => {
-            // 첫 문자로부터의 상대적 오프셋 유지
-            const offset = idx === 0 ? 0 : cp.originalX - subjectChars[0].originalX;
-            subjectRelativeOffsets.push(offset);
-          });
-          
-          // 주어의 각 문자를 조동사 위치에 배치 (상대적 위치는 유지)
-          subjectChars.forEach((cp, idx) => {
-            cp.x = auxOriginalX + subjectRelativeOffsets[idx];
-            cp.currentY = clone.targetY; // 확정된 Y 위치
-          });
-          
-          // 2. 공백 위치 조정 (주어 뒤에 정확히 붙임)
-          const lastSubjectChar = subjectChars[subjectChars.length - 1];
-          spaceChar.x = lastSubjectChar.x + lastSubjectChar.width;
-          spaceChar.currentY = clone.targetY;
-          
-          // 3. 조동사를 공백 뒤에 표준 간격으로 배치
-          const spaceEndX = spaceChar.x + spaceChar.width;
-          const auxRelativeOffsets = [];
-          
-          // 조동사 내 문자들의 상대적 오프셋 계산
-          auxChars.forEach((cp, idx) => {
-            const offset = idx === 0 ? 0 : cp.originalX - auxChars[0].originalX;
-            auxRelativeOffsets.push(offset);
-          });
-            // 조동사의 각 문자를 공백 뒤에 표준 간격으로 배치
-          auxChars.forEach((cp, idx) => {
-            // 첫 번째 문자는 공백 뒤에 표준 간격을 적용
-            if (idx === 0) {
-              cp.x = spaceEndX + clone.standardSpaceWidth - spaceChar.width;
-            } else {
-              cp.x = spaceEndX + clone.standardSpaceWidth - spaceChar.width + auxRelativeOffsets[idx];
-            }
-            cp.currentY = clone.targetY;
-          });
-          
-          // 최종 위치 디버그 로그
-          console.log("📏 Final positions - Subject starts at:", subjectChars[0].x, 
-                     ", Space at:", spaceChar.x, 
-                     ", Aux starts at:", auxChars[0].x);
-        }
+        // 원래 위치 계산
+        const auxStartX = clone.charPositions[0].originalX;
+        const subjectStartX = clone.charPositions[clone.auxLength + 1].originalX;
+        
+        // 주어와 조동사의 최종 위치 계산        // 주어를 조동사 위치로 이동하되 상대적 간격 유지
+        const subjectDistanceToMove = auxStartX - subjectStartX;
+        subjectChars.forEach(cp => {
+          const relativePosition = cp.originalX - subjectStartX; // 주어 시작점으로부터 상대적 위치
+          cp.x = auxStartX + relativePosition;
+          cp.currentY = clone.targetY; // Y 위치 복원 (반원 이동 후 원래 높이로)
+        });
+        
+        // 공백 위치 조정 (주어 뒤에 붙임)
+        const lastSubjectChar = subjectChars[subjectChars.length - 1];
+        spaceChar.x = lastSubjectChar ? lastSubjectChar.x + lastSubjectChar.width : auxStartX;
+        spaceChar.currentY = clone.targetY; // Y 위치 복원
+        
+        // 조동사를 주어 위치로 이동하되 상대적 간격 유지
+        const auxDistanceToMove = (subjectStartX - auxStartX);
+        auxChars.forEach(cp => {
+          const relativePosition = cp.originalX - auxStartX; // 조동사 시작점으로부터 상대적 위치
+          cp.x = spaceChar.x + spaceChar.width + relativePosition;
+        });
       }
     }
   }
@@ -2039,21 +1864,21 @@ function createVerbClone(verbWordRect) {
     return;
   }
   
-  // standardSpaceWidth를 동적으로 계산 (일관된 간격 유지)
+  // adjustedSpaceWidth를 동적으로 계산 (다른 단어들 간의 간격과 동일하게)
   ctx.font = englishFont;
   const originalSpaceWidth = ctx.measureText(" ").width;
-  const standardSpaceWidth = originalSpaceWidth * 1.20;
+  const adjustedSpaceWidth = originalSpaceWidth * 1.20;
   
-  // 주어+조동사 복제본이 있는 경우 그 끝 위치를 찾아서 standardSpaceWidth만큼 떨어뜨리기
+  // 주어+조동사 복제본이 있는 경우 그 끝 위치를 찾아서 adjustedSpaceWidth만큼 떨어뜨리기
   let targetX = verbWordRect.x; // 기본값: 원본 동사 위치
   let targetY = verbWordRect.y - CLONE_OFFSET_Y; // 의문사 복제본과 같은 높이
   
   if (subjectAuxClones.length > 0) {
     const subjectAuxClone = subjectAuxClones[0]; // 첫 번째 주어+조동사 복제본 사용
     if (subjectAuxClone.charPositions && subjectAuxClone.charPositions.length > 0) {
-      // 주어+조동사 복제본의 마지막 문자 위치 + 너비 + standardSpaceWidth
+      // 주어+조동사 복제본의 마지막 문자 위치 + 너비 + adjustedSpaceWidth
       const lastChar = subjectAuxClone.charPositions[subjectAuxClone.charPositions.length - 1];
-      targetX = lastChar.x + lastChar.width + standardSpaceWidth;
+      targetX = lastChar.x + lastChar.width + adjustedSpaceWidth;
       targetY = subjectAuxClone.targetY; // 주어+조동사 복제본과 같은 높이
     }
   }
@@ -2230,40 +2055,37 @@ function triggerBounceAnimationForWords(sentenceObject, isQuestion) {
   if (firstLineWords.length === 0) {
     console.log("❌ No words found in first line for sentence type");
     return;
-  }  let relevantWordRects = [];
+  }
+
+  let relevantWordRects = [];
   
-  // isQuestion 파라미터는 이제 사용하지 않고 문장 유형으로만 판단
-  if (isCurrentlyQuestion) {
-    // 질문 문장에서 "의문사+조동사+주어" 순서대로 바운스
-    relevantWordRects = firstLineWords.filter((wordRect, index) => {
-      const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
-      // 첫 번째 단어는 의문사
-      if (index === 0) {
-        const isWhWord = isWh(cleanWord);
-        console.log(`🔍 Checking first word "${wordRect.word}" (clean: "${cleanWord}") - isWh: ${isWhWord}`);
-        return isWhWord;
-      }
-      // 두 번째 단어는 조동사
-      if (index === 1) {
-        const isAuxWord = isAux(cleanWord);
-        console.log(`🔍 Checking second word "${wordRect.word}" (clean: "${cleanWord}") - isAux: ${isAuxWord}`);
-        return isAuxWord;
-      }
-      // 세 번째 단어는 주어 (의문사도 조동사도 동사도 아닌 경우)
-      if (index === 2) {
-        const isSubject = !isWh(cleanWord) && !isAux(cleanWord) && !isVerb(cleanWord);
-        console.log(`🔍 Checking third word "${wordRect.word}" (clean: "${cleanWord}") - isSubject: ${isSubject}`);
-        return isSubject;
-      }
-      return false;
-    });
-  } else if (isCurrentlyAnswer) {
-    // 답변 문장에서 조동사만: 첫 번째 줄에서 조동사인 단어들만
+  if (isQuestion) {
+    // 의문사만: 첫 번째 줄에서 실제 의문사인 단어들만
     relevantWordRects = firstLineWords.filter(wordRect => {
       const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
-      const isAuxWord = isAux(cleanWord);
-      console.log(`🔍 Checking answer word "${wordRect.word}" (clean: "${cleanWord}") - isAux: ${isAuxWord}`);
-      return isAuxWord;    });
+      const isWhWord = isWh(cleanWord);
+      console.log(`🔍 Checking word "${wordRect.word}" (clean: "${cleanWord}") - isWh: ${isWhWord}`);
+      return isWhWord;
+    });
+  } else {
+    if (isCurrentlyQuestion) {
+      // 질문 문장에서 조동사+주어만: 첫 번째 줄에서 조동사이거나 주어인 단어들만
+      relevantWordRects = firstLineWords.filter(wordRect => {
+        const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
+        const isAuxWord = isAux(cleanWord);
+        const isSubject = !isWh(cleanWord) && !isAux(cleanWord) && !isVerb(cleanWord);
+        console.log(`🔍 Checking word "${wordRect.word}" (clean: "${cleanWord}") - isAux: ${isAuxWord}, isSubject: ${isSubject}`);
+        return isAuxWord || isSubject;
+      });
+    } else if (isCurrentlyAnswer) {
+      // 답변 문장에서 조동사만: 첫 번째 줄에서 조동사인 단어들만
+      relevantWordRects = firstLineWords.filter(wordRect => {
+        const cleanWord = wordRect.word.toLowerCase().replace(/[^a-z0-9']/g, '');
+        const isAuxWord = isAux(cleanWord);
+        console.log(`🔍 Checking answer word "${wordRect.word}" (clean: "${cleanWord}") - isAux: ${isAuxWord}`);
+        return isAuxWord;
+      });
+    }
   }
   
   if (relevantWordRects.length === 0) {
@@ -2388,7 +2210,7 @@ function shouldCreateCloneForQuestionPattern(sentenceText) {
     return false;
   }
   
-  // 네 번째 단어 이후에 동사나 주어가 있는지 확인 (패턴 1의 경우)
+  // 네 번째 단어 이후에 동사가 있는지 확인 (패턴 1의 경우)
   if (words.length < 4) {
     console.log("❌ Not enough words for pattern 1");
     return false;
@@ -2570,10 +2392,12 @@ function drawSingleSentenceBlock(sentenceObject, baseY, isQuestionBlock, blockCo
         yFirstLineTextCenter = baseY - blockHeight / 2 + LINE_HEIGHT / 2;
     } else {
         yFirstLineTextCenter = baseY + LINE_HEIGHT / 2;
-    }    let lastDrawnTextBottomY = baseY;
+    }
+
+    let lastDrawnTextBottomY = baseY;
 
     const sentenceFullText = (sentenceObject.line1 + " " + sentenceObject.line2).trim();
-    const isCurrentBlockContentQuestionType = isQuestion(sentenceFullText);for (let i = 0; i < lines.length; i++) {
+    const isCurrentBlockContentQuestionType = isQuestion(sentenceFullText);    for (let i = 0; i < lines.length; i++) {
         const lineText = lines[i];
         let currentLineCenterY = yFirstLineTextCenter + i * LINE_HEIGHT;
           // 각 줄마다 색상 플래그 초기화 (줄별로 독립적으로 색상 처리)
@@ -2831,20 +2655,24 @@ function drawCenterSentence() {
         playButtonRectQuestion = { x: btnX, y: playButtonQuestionY, w: btnW_forHitbox, h: btnH_forHitbox };
         if (showPlayButtonQuestion) {
             drawPlayButton(playButtonRectQuestion, currentVisualScaleForHitbox);
-        }        if (showTranslationForQuestion && currentQuestionSentenceIndex !== null && translations[currentQuestionSentenceIndex]) {
+        }
+
+        if (showTranslationForQuestion && currentQuestionSentenceIndex !== null && translations[currentQuestionSentenceIndex]) {
             ctx.save();
             ctx.globalAlpha = centerAlpha;
             ctx.font = translationFont;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
+            ctx.fillStyle = "#2E8B57";
             ctx.shadowColor = "#111"; ctx.shadowBlur = 4;
-            ctx.fillStyle = "#16c016"; // 녹색으로 색상 설정
             const translationTextHeight = parseFloat(translationFont.match(/(\d*\.?\d*)px/)[1]);
             const translationBelowY = questionDrawOutput.lastY + 10 + translationTextHeight / 2;
             ctx.fillText(translations[currentQuestionSentenceIndex], canvas.width / 2, translationBelowY);
             ctx.restore();
         }
-    }    if (currentAnswerSentence) {
+    }
+
+    if (currentAnswerSentence) {
         const answerLines = [currentAnswerSentence.line1, currentAnswerSentence.line2].filter(l => l && l.trim());
         const answerBlockHeight = answerLines.length * LINE_HEIGHT;
         let topYForAnswerBlock;
@@ -2865,13 +2693,15 @@ function drawCenterSentence() {
 
         let answerBlockContext = { verbColored: false, auxColored: false, verbFoundInPattern2: false };
         const answerDrawOutput = drawSingleSentenceBlock(currentAnswerSentence, topYForAnswerBlock, false, answerBlockContext);
-        newWordRects.push(...answerDrawOutput.wordRects);        if (showTranslationForAnswer && currentAnswerSentenceIndex !== null && translations[currentAnswerSentenceIndex]) {
+        newWordRects.push(...answerDrawOutput.wordRects);
+
+        if (showTranslationForAnswer && currentAnswerSentenceIndex !== null && translations[currentAnswerSentenceIndex]) {
             ctx.save();
             ctx.globalAlpha = centerAlpha;
             ctx.font = translationFont;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillStyle = "#16c016"; // 답변 문장도 녹색으로 변경
+            ctx.fillStyle = "#2E8B57";
             ctx.shadowColor = "#111"; ctx.shadowBlur = 4;
             const translationTextHeight = parseFloat(translationFont.match(/(\d*\.?\d*)px/)[1]);
             const translationBelowY = answerDrawOutput.lastY + 3 + translationTextHeight / 2;
@@ -3074,22 +2904,14 @@ function startFireworks(sentenceTextForFireworks, globalSentenceIndex, explosion
     let roleOfNewSentence;
     let questionTextForLayout = "";
     const isNewSentenceQuestion = globalSentenceIndex % 2 === 0;
-    roleOfNewSentence = isNewSentenceQuestion ? 'question' : 'answer';      // 새로운 문장쌍(질문)이 시작될 때만 이전 쌍의 이미지를 숨김
-    // (이미지는 문장쌍이 완전히 사라질 때까지 유지되어야 함)
-    if (roleOfNewSentence === 'question') {
-        // 새로운 질문이 시작될 때 이전 쌍의 이미지를 숨김
-        if (globalSentenceIndex > 0) {  // 첫 번째 질문이 아닌 경우에만
-            console.log("새로운 질문 시작. 이전 이미지 숨김:", globalSentenceIndex);
-            hideSentenceImage(); // 이전 이미지 숨기기
-        }
-        
+    roleOfNewSentence = isNewSentenceQuestion ? 'question' : 'answer';    if (roleOfNewSentence === 'question') {
         currentQuestionSentence = null; currentAnswerSentence = null;
         currentQuestionSentenceIndex = null; currentAnswerSentenceIndex = null;
         showPlayButton = false; showPlayButtonQuestion = false;
         showTranslationForQuestion = false; showTranslationForAnswer = false;
         
         // 새로운 질문 시작 시 복제본 생성 플래그 리셋
-        cloneCreatedForCurrentQuestion = false;} else { // Answer
+        cloneCreatedForCurrentQuestion = false;    } else { // Answer
         if (currentQuestionSentence && currentQuestionSentenceIndex === globalSentenceIndex - 1) {
             questionTextForLayout = (currentQuestionSentence.line1 + " " + currentQuestionSentence.line2).trim();
         } else if (globalSentenceIndex > 0 && sentences[globalSentenceIndex - 1]) {
@@ -3130,9 +2952,9 @@ function startFireworks(sentenceTextForFireworks, globalSentenceIndex, explosion
     if (centerX - maxRadius < margin) centerX = margin + maxRadius;
     if (centerX + maxRadius > canvas.width - margin) centerX = canvas.width - margin - maxRadius;    fireworks = [];    fireworksState = {
         t: 0, phase: "explode", holdDuration: 40, 
-        // 모든 디바이스에서 일관된 속도 사용
-        explodeDuration: 150,  // 폭발 시간 (1.5초)
-        gatherDuration: 170,   // 모이는 시간 (1.7초)
+        // PC에서는 폭발 과정 0.92초(92), 문장 정렬 1초(100)로 설정, 모바일에서는 기존 값 유지
+        explodeDuration: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 180 : 92,
+        gatherDuration: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 170 : 100,
         originX: centerX, originY: explosionY,
         sentenceTextToDisplayAfter: sentenceTextForFireworks,
         finalSentenceIndex: globalSentenceIndex,
@@ -3222,9 +3044,15 @@ function updateFireworks() {
       centerAlpha = 0;
     }  } else if (fireworksState.phase === "gather") {
     const progress = Math.min(fireworksState.t / fireworksState.gatherDuration, 1);
-    // 모든 디바이스에서 동일한 부드러운 이징 적용
-    // easeInOutSine 함수 - 시작과 끝이 부드럽고 중간에 일정한 속도로 이동
-    let ease = 0.5 * (1 - Math.cos(progress * Math.PI));
+    // 핸드폰 모드에서만 더 정확하고 부드러운 이징 적용
+    let ease;
+    if (fireworksState.isMobileDevice) {
+      // 핸드폰에서는 경로를 따라 자연스럽게 이동하는 이징
+      ease = Math.sin(progress * Math.PI / 2); // 0에서 시작하여 1로 부드럽게 증가
+    } else {
+      // PC에서는 기존 이징 로직 유지
+      ease = progress < 0.6 ? Math.pow(progress, 2) : 1 - Math.pow(1 - progress, 3);
+    }
     
     // 경로 초기화가 필요한 경우를 위해 플래그 설정
     if (fireworksState.t === 1) {
@@ -3270,90 +3098,80 @@ function updateFireworks() {
             wordIndexInFireworks++;
         }
     }
-      // 첫 프레임에서만 경로 초기화 (모든 디바이스에서 동일하게)
+    
+    // 모바일에서 단어들이 서로 겹치지 않게 확인
+    if (fireworksState.isMobileDevice && !fireworksState.pathsInitialized && fireworksState.t === 1) {
+        // 각 단어마다 유일한 경로와 시작/끝 위치를 설정
+        for (let i = 0; i < fireworks.length; i++) {
+            // 시작 위치는 폭발 단계에서 이미 설정됨
+            // 끝 위치는 단어의 최종 위치
+            fireworks[i].originalTargetX = fireworks[i].targetX;
+            fireworks[i].originalTargetY = fireworks[i].targetY;
+        }
+        fireworksState.pathsInitialized = true;
+    }// 첫 프레임에서만 초기 위치와 목표 위치를 저장 (경로가 겹치지 않도록)
     if (fireworksState.t === 1) {
-      fireworksState.pathsInitialized = true;
-      
       fireworks.forEach((fw) => {
-        // 시작 위치 설정
         fw.startX = fw.x;
         fw.startY = fw.y;
-        
-        // 목표 위치까지의 경로 각도 계산
         fw.pathAngle = Math.atan2(fw.targetY - fw.y, fw.targetX - fw.x);
-        
-        // 약간의 변동성을 주어 단어들이 자연스럽게 다른 경로로 이동하도록 함
-        // 변동성을 줄여서 모든 단어가 더 일관된 속도로 움직이게 함
-        fw.pathVariation = (Math.random() * 0.3) - 0.15;
+        // 약간의 변동성을 주어 단어들이 서로 다른 경로로 이동하도록 함
+        fw.pathVariation = (Math.random() * 0.4) - 0.2;
       });
     }
-      fireworks.forEach((fw) => {
-      // 모든 디바이스에서 동일한 베지어 곡선 방식으로 부드럽게 이동
-      const t = ease;
-      const startX = fw.startX;
-      const startY = fw.startY;
-      const endX = fw.targetX;
-      const endY = fw.targetY;
-      
-      // 곡선 제어점 계산 (자연스러운 움직임을 위해 약간의 변동성 추가)
-      const controlAmplitude = 25; // 일정한 곡률 값 설정
-      const controlX = startX + (endX - startX) * 0.5 + Math.cos(fw.pathAngle + Math.PI/2) * controlAmplitude * fw.pathVariation;
-      const controlY = startY + (endY - startY) * 0.5 + Math.sin(fw.pathAngle + Math.PI/2) * controlAmplitude * fw.pathVariation;
-      
-      // 2차 베지어 곡선으로 위치 계산 (일관된 속도로 부드럽게 이동)
-      fw.x = Math.pow(1-t, 2) * startX + 2 * (1-t) * t * controlX + Math.pow(t, 2) * endX;
-      fw.y = Math.pow(1-t, 2) * startY + 2 * (1-t) * t * controlY + Math.pow(t, 2) * endY;
-      
-      // 애니메이션 종료 시 정확한 위치 보장
-      if (progress > 0.95) {
-        fw.x = fw.targetX;
-        fw.y = fw.targetY;
+    
+    fireworks.forEach((fw) => {
+      // 핸드폰에서는 단어들이 직접적인 경로로 정확하게 이동
+      if (fireworksState.isMobileDevice) {
+        // 베지어 곡선 방식으로 직접적인 경로를 만듦
+        const t = ease;
+        const startX = fw.startX;
+        const startY = fw.startY;
+        const endX = fw.targetX;
+        const endY = fw.targetY;
+        
+        // 곡선 제어점 계산 (단어 별로 경로가 약간 다르게 설정됨)
+        const controlX = startX + (endX - startX) * 0.5 + Math.cos(fw.pathAngle + Math.PI/2) * 30 * fw.pathVariation;
+        const controlY = startY + (endY - startY) * 0.5 + Math.sin(fw.pathAngle + Math.PI/2) * 30 * fw.pathVariation;
+        
+        // 2차 베지어 곡선으로 위치 계산 (t 값에 따른 정확한 위치)
+        fw.x = Math.pow(1-t, 2) * startX + 2 * (1-t) * t * controlX + Math.pow(t, 2) * endX;
+        fw.y = Math.pow(1-t, 2) * startY + 2 * (1-t) * t * controlY + Math.pow(t, 2) * endY;
+        
+        // 끝부분에서는 정확히 목표 위치에 도달
+        if (progress > 0.95) {
+          fw.x = fw.targetX;
+          fw.y = fw.targetY;
+        }
+      } else {
+        // PC에서는 기존 이동 방식 유지
+        const smoothedEase = progress < 0.8 ? ease : 1 - Math.pow(1 - progress, 3);
+        const moveSpeed = 0.3;
+        fw.x += (fw.targetX - fw.x) * smoothedEase * moveSpeed;
+        fw.y += (fw.targetY - fw.y) * smoothedEase * moveSpeed;
       }
-    });    // 투명도 천천히 높이기 (모든 디바이스에서 동일하게)
-    const alphaSpeed = 0.15;
+    });
+      // 핸드폰에서는 투명도 변화도 더 천천히
+    const alphaSpeed = fireworksState.isMobileDevice ? 0.15 : 0.25;
     centerAlpha += (1.0 - centerAlpha) * ease * alphaSpeed;
     
     // 애니메이션 마지막 5%에서는 모든 단어를 정확한 위치로 고정
-    if (progress >= 0.95) {
+    if (fireworksState.isMobileDevice && progress >= 0.95) {
         fireworks.forEach(fw => {
             fw.x = fw.targetX; // 정확한 X 위치로 고정
             fw.y = fw.targetY; // 정확한 Y 위치로 고정
         });
-    }    if (progress >= 1) {
+    }
+
+    if (progress >= 1) {
         fireworksState.phase = "done";
         const newSentenceText = fireworksState.sentenceTextToDisplayAfter;
         const newSentenceIndex = fireworksState.finalSentenceIndex;
         const roleOfNewSentence = fireworksState.roleOfNewSentence;
-        
-        console.log("문장 정렬 완료:", {
-            text: newSentenceText,
-            index: newSentenceIndex,
-            role: roleOfNewSentence,
-            isQuestion: newSentenceIndex % 2 === 1,
-            isOdd: newSentenceIndex % 2 === 1
-        });
-        
         const isFinalSentenceQuestion = roleOfNewSentence === 'question';
         const [newLine1, newLine2] = splitSentence(newSentenceText, isFinalSentenceQuestion);
-        const newSentenceObject = { line1: newLine1, line2: newLine2 };        let playAudioForThisSentence = false;        
-        // 실제 문장 번호는 인덱스+1 (0->1번, 1->2번...)
-        const actualSentenceNumber = newSentenceIndex + 1;
-        console.log("문장 정렬 완료. 실제 문장 번호:", actualSentenceNumber);
-        
-        // 홀수 번호 문장(질문)이 나타날 때 직접 해당 이미지 표시
-        if (actualSentenceNumber % 2 === 1) {
-            console.log("홀수 번호 문장 정렬 완료. 이미지 표시:", actualSentenceNumber);
-            showSentenceImage(newSentenceIndex);
-        }
-        // 짝수 번호 문장(답변)이 나타날 때는 해당하는 홀수 번호 문장(질문) 이미지 표시
-        else if (actualSentenceNumber % 2 === 0) {
-            // 바로 이전 홀수 번호 문장 인덱스 계산
-            const previousQuestionIndex = newSentenceIndex - 1;
-            if (previousQuestionIndex >= 0) {
-                console.log("짝수 번호 문장 정렬 완료. 관련 질문 이미지 표시:", previousQuestionIndex + 1);
-                showSentenceImage(previousQuestionIndex);
-            }
-        }if (roleOfNewSentence === 'question') {
+        const newSentenceObject = { line1: newLine1, line2: newLine2 };
+        let playAudioForThisSentence = false;        if (roleOfNewSentence === 'question') {
             currentQuestionSentence = newSentenceObject; currentQuestionSentenceIndex = newSentenceIndex;
             currentAnswerSentence = null; currentAnswerSentenceIndex = null;
             showPlayButton = false; showPlayButtonQuestion = true;
@@ -3365,13 +3183,11 @@ function updateFireworks() {
             if (questionIndexOfThisAnswer >= 0 && sentences[questionIndexOfThisAnswer]) {
                 // 질문이 이미 있고 동일한 인덱스인 경우, 복제본 플래그 유지
                 const shouldPreserveCloneFlag = currentQuestionSentence && currentQuestionSentenceIndex === questionIndexOfThisAnswer;
-                  if (!currentQuestionSentence || currentQuestionSentenceIndex !== questionIndexOfThisAnswer) {
+                
+                if (!currentQuestionSentence || currentQuestionSentenceIndex !== questionIndexOfThisAnswer) {
                     const [qL1, qL2] = splitSentence(sentences[questionIndexOfThisAnswer], true);
                     currentQuestionSentence = {line1: qL1, line2: qL2};
                     currentQuestionSentenceIndex = questionIndexOfThisAnswer;
-                    
-                    // 질문 문장에 해당하는 이미지 표시 (답변 문장이 나타날 때도)
-                    showSentenceImage(questionIndexOfThisAnswer);
                     
                     // 새로운 질문이 로드된 경우에만 복제본 플래그 리셋
                     if (!shouldPreserveCloneFlag) {
@@ -3390,17 +3206,12 @@ function updateFireworks() {
             
             // 새로운 답변 설정 시 복제본 생성 플래그 리셋
             cloneCreatedForCurrentAnswer = false;
-        }        centerAlpha = 1.0;
-        fireworks = null; 
-        fireworksState = null; 
-        
-        // 문장 처리 완료 표시 - 이것이 false여야 다음 문장 처리가 가능함
-        console.log("문장 처리 완료: sentenceActive를 false로 설정합니다.");
-        sentenceActive = false;
-        
+        }        centerAlpha = 1.0;        fireworks = null; fireworksState = null; sentenceActive = false;
         if (activeWordTranslation) activeWordTranslation.show = false;
-        activeWordTranslation = null; 
-        if (wordTranslationTimeoutId) clearTimeout(wordTranslationTimeoutId);// 폭발 후 자동 오디오 재생 (복제본 생성 없음)
+        activeWordTranslation = null; if (wordTranslationTimeoutId) clearTimeout(wordTranslationTimeoutId);
+        
+        // 답변 문장으로 넘어갈 때는 이미지를 숨기지 않음 (다음 폭발 때까지 유지)
+        // 이미지는 다음 새로운 질문 문장이 시작될 때 사라짐// 폭발 후 자동 오디오 재생 (복제본 생성 없음)
         console.log("DEBUG: Checking auto audio playback - playAudioForThisSentence:", playAudioForThisSentence);
         if (playAudioForThisSentence) {
             let audioIndexToPlay = null;
@@ -3425,12 +3236,20 @@ function updateFireworks() {
                             if (roleOfNewSentence === 'question') {
                                 // 첫번째 문장(질문): "의문사"와 "조동사+주어"를 바운스
                                 console.log("🏀 Triggering bounce animations for question sentence during auto TTS");
-                                  // 질문 문장의 "의문사+조동사+주어" 순서대로 바운스 애니메이션 적용
+                                
+                                // 의문사 먼저 바운스 (질문 읽기 타이밍에 맞춤)
                                 setTimeout(() => {
                                     if (currentQuestionSentence) {
-                                        triggerBounceAnimationForWords(currentQuestionSentence, false); // 이제 한 번만 호출
+                                        triggerBounceAnimationForWords(currentQuestionSentence, true); // 의문사
                                     }
-                                }, 200); // 음성 시작 후 200ms 후 바운스 시작
+                                }, 100); // 음성 시작 후 100ms 후 의문사 바운스
+                                
+                                // 조동사+주어는 조금 더 지연해서 바운스 (읽기 진행에 맞춤)
+                                setTimeout(() => {
+                                    if (currentQuestionSentence) {
+                                        triggerBounceAnimationForWords(currentQuestionSentence, false); // 조동사+주어
+                                    }
+                                }, 600); // 음성 시작 후 600ms 후 조동사+주어 바운스
                                 
                             } else if (roleOfNewSentence === 'answer') {
                                 // 두번째 문장(답변): "조동사"를 바운스
@@ -3559,25 +3378,20 @@ function update(delta) {
       const coreBulletY = b.y + coreBulletOffsetY;
       const coreBulletWidth = b.w * (1 - 2 * collisionPaddingFactor);
       const coreBulletHeight = b.h * (1 - 2 * collisionPaddingFactor);      if (coreBulletX < e.x + e.w && coreBulletX + coreBulletWidth > e.x &&
-          coreBulletY < e.y + e.h && coreBulletY + coreBulletHeight > e.y) {        console.log("충돌 발생! sentenceActive 상태:", sentenceActive);
+          coreBulletY < e.y + e.h && coreBulletY + coreBulletHeight > e.y) {
         if (!sentenceActive) {
             const sentenceToFirework = sentences[sentenceIndex];
             const globalIndexOfSentence = sentenceIndex;
-                  // 종합 디버깅 로그
-            console.log("문장 처리 시작:", {
-                text: sentenceToFirework, 
-                index: globalIndexOfSentence, 
-                actualSentenceNumber: globalIndexOfSentence + 1,
-                isQuestion: globalIndexOfSentence % 2 === 0,
-                role: globalIndexOfSentence % 2 === 0 ? "question" : "answer",
-                isOddActualNumber: (globalIndexOfSentence + 1) % 2 === 1
-            });
+            
+            // 홀수 번호 문장(1, 3, 5...)인 경우에만 이미지 표시
+            if (typeof showSentenceImage === 'function') {
+                showSentenceImage(globalIndexOfSentence);
+            }
+            
             startFireworks(sentenceToFirework, globalIndexOfSentence, e.x + e.w / 2, e.y + e.h / 2);
             sentenceIndex = (sentenceIndex + 1) % sentences.length;
             localStorage.setItem('sentenceIndex', sentenceIndex.toString());
             sounds.explosion.play();
-        } else {
-            console.log("sentenceActive가 true이므로 새 문장을 시작하지 않습니다.");
         }
         enemies.splice(ei, 1); bullets.splice(bi, 1);
       }
@@ -3664,7 +3478,8 @@ function draw() {
       currentAnswerSentence = tempAnswerSentence; currentAnswerSentenceIndex = tempAnswerIndex;
     }
     centerAlpha = previousGlobalCenterAlpha;
-    drawFireworks();  } else {
+    drawFireworks();
+  } else {
     if (currentQuestionSentence || currentAnswerSentence) {
       centerAlpha = 1.0;
       drawCenterSentence();
@@ -3677,55 +3492,33 @@ function draw() {
 
 function gameLoop(time) {
   if (!isGameRunning || isGamePaused) { if (isGamePaused) draw(); return; }
-  
-  // 디버그: 게임 루프가 실행되고 있는지 확인
-  if (Math.random() < 0.01) { // 1% 확률로 로그 출력 (너무 많은 로그 방지)
-    console.log("🔄 Game loop running - time:", time);
-    console.log("   - Action locked:", isActionLocked);
-    console.log("   - Clone counts:", 
-                "Q:", questionWordClones.length, 
-                "SA:", subjectAuxClones.length,
-                "V:", verbClones.length);
-  }
-  
-  const delta = time - lastTime; 
-  lastTime = time;
-  update(delta); 
-  draw();
-  
-  // 패턴 1에서 문제가 발생할 경우를 위한 안전장치
-  if (isGameRunning && !isGamePaused) {
-    requestAnimationFrame(gameLoop);
-  }
+  const delta = time - lastTime; lastTime = time;
+  update(delta); draw();
+  requestAnimationFrame(gameLoop);
 }
 
 document.getElementById('startBtn').onclick = startGame;
 document.getElementById('pauseBtn').onclick = togglePause;
 document.getElementById('stopBtn').onclick = stopGame;
 
-function resetGameStateForStartStop(preserveSentences = false) {
+function resetGameStateForStartStop() {
     bullets = []; enemies = []; enemyBullets = []; detachedPetals = [];
     fireworks = null; fireworksState = null;
-    
-    // preserveSentences가 true이면 현재 문장 유지, 아니면 초기화
-    if (!preserveSentences) {
-        // stop 버튼 후 start 버튼 터치 시 이전 문장이 나타나지 않도록 초기화
-        currentQuestionSentence = null; currentAnswerSentence = null;
-        currentQuestionSentenceIndex = null; currentAnswerSentenceIndex = null;
-    }
-    sentenceActive = false; centerAlpha = 1.0;    // 이미지 숨기기
-    hideSentenceImage();
-    
-    // preserveSentences가 true이면 플레이 버튼 상태 유지, 아니면 초기화
-    if (!preserveSentences) {
-        showPlayButton = false; playButtonRect = null;
-        showPlayButtonQuestion = false; playButtonRectQuestion = null;
-    }
+    currentQuestionSentence = null; currentAnswerSentence = null;
+    currentQuestionSentenceIndex = null; currentAnswerSentenceIndex = null;
+    sentenceActive = false; centerAlpha = 1.0;
+    showPlayButton = false; playButtonRect = null;
+    showPlayButtonQuestion = false; playButtonRectQuestion = null;
     showTranslationForQuestion = false; showTranslationForAnswer = false;
     if (activeWordTranslation) activeWordTranslation.show = false;
     activeWordTranslation = null;
     if (wordTranslationTimeoutId) { clearTimeout(wordTranslationTimeoutId); wordTranslationTimeoutId = null; }
     centerSentenceWordRects = []; isActionLocked = false;
+    
+    // 이미지 숨기기
+    if (typeof hideSentenceImage === 'function') {
+        hideSentenceImage();
+    }
 
   // Reset word animations
   activeAnimations = []; // Clear the array of active animations  // 게임 시작/정지 시 모든 클론 제거 및 모든 플래그 리셋 (완전 초기화)
@@ -3738,7 +3531,7 @@ function resetGameStateForStartStop(preserveSentences = false) {
   clearBounceAnimations();
 }
 
-function startGame(preserveSentences = false) {
+function startGame() {
   calculateTopOffset();
   if (!allAssetsReady) {
     console.warn("Assets not ready. Please wait and try starting again.");
@@ -3754,14 +3547,15 @@ function startGame(preserveSentences = false) {
   const playPromise = bgmAudio.play();
   if (playPromise !== undefined) {
     playPromise.catch(error => { console.error('BGM play error on start:', error); });
-  }  if (coffeeSteamVideo && coffeeVideoAssetReady) {
+  }
+  if (coffeeSteamVideo && coffeeVideoAssetReady) {
     coffeeSteamVideo.currentTime = 0;
     const coffeePlayPromise = coffeeSteamVideo.play();
     if (coffeePlayPromise !== undefined) {
       coffeePlayPromise.catch(error => console.error("Error playing coffee steam video:", error));
     }
   }
-  resetGameStateForStartStop(preserveSentences);
+  resetGameStateForStartStop();
   let storedIndex = Number(localStorage.getItem('sentenceIndex') || 0);
   sentenceIndex = storedIndex % sentences.length;
   localStorage.setItem('sentenceIndex', sentenceIndex.toString());
@@ -3865,32 +3659,12 @@ function handleCanvasInteraction(clientX, clientY, event) {
                       console.log("⚠️ Unexpected state in question play button handler");
                       console.log("  - cloneCreated:", cloneCreatedForCurrentQuestion);
                       console.log("  - currentQuestion:", !!currentQuestionSentence);
-                      console.log("  - questionIndex:", currentQuestionSentenceIndex);                  }
+                      console.log("  - questionIndex:", currentQuestionSentenceIndex);
+                  }
               })
               .catch(err => console.error("Error playing question sentence audio from play button:", err));
       }
-      
-      // 패턴 1인지 확인하여 다르게 처리
-      const fullQuestionText = currentQuestionSentence ? 
-            (currentQuestionSentence.line1 + " " + currentQuestionSentence.line2).trim() : "";
-      
-      // 패턴 감지를 요청하여 결과 확인
-      // 패턴 1인 경우 주어+조동사 교환 애니메이션이 끝난 후에 락이 해제됨
-      window.lastDetectedPattern = "unknown"; // 초기화
-      const isPattern1 = !shouldCreateCloneForQuestionPattern(fullQuestionText) && 
-                        window.lastDetectedPattern !== "pattern2";
-      
-      if (!isPattern1) {
-        // 패턴 1이 아닌 경우 바로 락 해제 (패턴 2 등)
-        console.log("🔓 Not pattern 1 - releasing action lock immediately");
-        setTimeout(() => { isActionLocked = false; }, 200);
-      } else {
-        console.log("🔒 Pattern 1 detected - action lock will be released after animation");
-        // 패턴 1은 주어+조동사 교환 애니메이션 완료 후에 락 해제됨
-      }
-      
-      event.preventDefault();
-      return;
+      event.preventDefault(); setTimeout(() => { isActionLocked = false; }, 200); return;
     }    if (isPlayBtnAnswerTouched) {
       showTranslationForAnswer = true; showTranslationForQuestion = false;
       if (activeWordTranslation) activeWordTranslation.show = false;
@@ -4305,11 +4079,11 @@ function populateSentenceList() {
         // 짝수 번호 문장(인덱스 1, 3, 5...)에 추가 마진 클래스 적용
         else {
             sentenceItem.classList.add('answer-sentence');
-        }
-        
-        // 문장 번호와 내용 추가
+        }        // 문장 번호와 내용 추가
         const sentenceNumber = document.createElement('span');
         sentenceNumber.className = 'sentence-number';
+        sentenceNumber.style.color = 'white'; // 번호 색상을 흰색으로 직접 지정
+        sentenceNumber.style.fontSize = '13.68px'; // 문장 번호 크기 20% 축소 (17.1px * 0.8)
         sentenceNumber.textContent = `${index + 1}.`;
         
         const sentenceText = document.createElement('span');
@@ -4317,50 +4091,49 @@ function populateSentenceList() {
           // 모든 줄바꿈을 제거하고 한 줄로 표시 (\\n 이스케이프 문자와 실제 줄바꿈 모두 처리)
         let cleanedText = sentence.replace(/\\n|\n|\r/g, ' ');
         // 두 개 이상의 연속된 공백을 하나로 줄임
-        cleanedText = cleanedText.replace(/\s+/g, ' ');          // 홀수 문장(의문문)의 경우 의문사와 조동사를 녹색으로 표시
-        if (index % 2 === 0) { // 인덱스는 0부터 시작하므로 짝수 인덱스가 홀수 문장
-            const questionWords = ['Where', 'Why', 'Who', 'What', 'How', 'When'];
-            let html = cleanedText;
-            let foundQuestionWord = false;
+        cleanedText = cleanedText.replace(/\s+/g, ' ');
+        
+        // 홀수 문장(인덱스가 0, 2, 4...)에 대해서만 의문사와 조동사에 색상 적용
+        if (index % 2 === 0) { // 인덱스가 짝수면 실제로는 홀수 문장
+            sentenceText.innerHTML = ''; // textContent 대신 innerHTML 사용
             
-            // 먼저 의문사를 찾아 녹색으로 표시 (문장 시작 부분에 위치)
-            for (const qWord of questionWords) {
-                const regex = new RegExp(`^(${qWord})\\b`, 'i');
-                if (regex.test(html)) {
-                    html = html.replace(regex, `<span class="question-word">$1</span>`);
-                    foundQuestionWord = true;
-                    break; // 의문사를 찾았으면 중단
+            // 문장을 단어로 분리
+            const words = cleanedText.split(' ');
+            
+            words.forEach((word, wordIndex) => {
+                const wordSpan = document.createElement('span');
+                
+                // 실제 단어 추출 (마침표, 콤마 등 제외)
+                const actualWord = word.replace(/[^\w\']/g, '');
+                
+                // 의문사는 녹색, 조동사는 파란색, 나머지는 흰색
+                if (isQuestionWord(actualWord)) {
+                    wordSpan.style.color = '#4AFF4A'; // 의문사 녹색
+                } else if (isModalVerb(actualWord)) {
+                    wordSpan.style.color = '#4A9FFF'; // 조동사 파란색
+                } else {
+                    wordSpan.style.color = 'white'; // 나머지 흰색
                 }
-            }
-            
-            // 의문사와 상관없이 항상 조동사 찾기 (축약형 포함)
-            // 1. 축약형 조동사 먼저 처리 (전체 단어로 찾기)
-            const contractedModals = ["can't", "won't", "wouldn't", "couldn't"];
-            let foundModalVerb = false;
-            
-            for (const contracted of contractedModals) {
-                const contractedRegex = new RegExp(`\\b(${contracted})\\b`, 'i');
-                if (contractedRegex.test(html)) {
-                    html = html.replace(contractedRegex, `<span class="modal-verb">$1</span>`);
-                    foundModalVerb = true;
-                    break; // 축약형을 찾았으면 중단
-                }
-            }
-            
-            // 2. 일반 조동사 처리 (아직 축약형이 처리되지 않은 경우)
-            if (!foundModalVerb) {
-                const regularModals = ['will', 'would', 'can', 'could'];
-                for (const modalVerb of regularModals) {
-                    const modalRegex = new RegExp(`\\b(${modalVerb})\\b`, 'i');
-                    if (modalRegex.test(html)) {
-                        html = html.replace(modalRegex, `<span class="modal-verb">$1</span>`);
-                        break; // 조동사를 찾았으면 중단
-                    }
-                }
-            }
-            sentenceText.innerHTML = html; // innerHTML로 설정하여 HTML 태그 적용
+                
+                // 마지막 단어가 아니면 공백 추가
+                wordSpan.textContent = word + (wordIndex < words.length - 1 ? ' ' : '');
+                sentenceText.appendChild(wordSpan);
+            });
         } else {
-            sentenceText.textContent = cleanedText;
+            sentenceText.textContent = cleanedText; // 짝수 문장은 그대로 표시
+        }
+        
+        // 의문사 확인 함수
+        function isQuestionWord(word) {
+            const questionWords = ['what', 'where', 'when', 'why', 'who', 'how', 'which', 'whose'];
+            return questionWords.includes(word.toLowerCase());
+        }
+        
+        // 조동사 확인 함수
+        function isModalVerb(word) {
+            const modalVerbs = ['will', 'won\'t', 'would', 'wouldn\'t', 'can', 'can\'t', 'could', 'couldn\'t', 
+                              'shall', 'should', 'shouldn\'t', 'may', 'might', 'must', 'mustn\'t'];
+            return modalVerbs.includes(word.toLowerCase());
         }
         
         sentenceItem.appendChild(sentenceNumber);
@@ -4377,97 +4150,48 @@ function populateSentenceList() {
             
             // 드롭다운 닫기
             sentenceList.style.display = 'none';
-              // 게임이 진행 중이면 중지
+            
+            // 게임이 진행 중이면 중지
             if (isGameRunning) {
                 stopGame();
             }
             
-            // 먼저 문장 설정
-            const sentenceText = sentences[index];
-            const lines = sentenceText.split(/\\n|\n/);
-            const line1 = lines[0] ? lines[0].trim() : "";
-            const line2 = lines[1] ? lines[1].trim() : "";
-            const sentenceObj = { line1, line2 };
-            
-            // 실제 문장 번호 계산 (1부터 시작)
-            const actualSentenceNumber = index + 1;
-            const isOdd = actualSentenceNumber % 2 === 1;
-            
-            // 홀수/짝수에 따라 문장 변수 설정
-            if (isOdd) {
-                // 홀수 문장 (질문 문장)
-                currentQuestionSentence = sentenceObj;
-                currentQuestionSentenceIndex = index;
-                currentAnswerSentence = null;
-                currentAnswerSentenceIndex = null;
-                showPlayButtonQuestion = true;
-                showPlayButton = false;            } else {
-                // 짝수 문장 (답변 문장)
-                currentAnswerSentence = sentenceObj;
-                currentAnswerSentenceIndex = index;
-                
-                // 짝수 문장일 때는 해당하는 홀수 문장(질문)도 표시
-                const questionIndex = index - 1;
-                if (questionIndex >= 0 && sentences[questionIndex]) {
-                    const questionText = sentences[questionIndex];
-                    const qLines = questionText.split(/\\n|\n/);
-                    const qLine1 = qLines[0] ? qLines[0].trim() : "";
-                    const qLine2 = qLines[1] ? qLines[1].trim() : "";
-                    currentQuestionSentence = { line1: qLine1, line2: qLine2 };
-                    currentQuestionSentenceIndex = questionIndex;
-                    showPlayButtonQuestion = true;
-                    
-                    // 질문 이미지도 표시 (홀수 번호 이미지)
-                    setTimeout(() => {
-                        showSentenceImage(questionIndex);
-                    }, 100);
-                } else {
-                    currentQuestionSentence = null;
-                    currentQuestionSentenceIndex = null;
-                    showPlayButtonQuestion = false;
-                }
-                
-                showPlayButton = true;
-            }
-            
-            console.log(`문장 설정 완료 - ${index + 1}번:`, sentenceObj);
-              // 게임 시작
+            // 새 게임 시작 및 바로 문장 표시
             setTimeout(() => {
-                console.log(`게임 시작 전 문장 상태 체크:`);
-                console.log(`  - currentQuestionSentence:`, currentQuestionSentence);
-                console.log(`  - currentAnswerSentence:`, currentAnswerSentence);                console.log(`  - showPlayButton:`, showPlayButton);                console.log(`  - showPlayButtonQuestion:`, showPlayButtonQuestion);
+                startGame();
                 
-                // 문장 보존 모드로 게임 시작
-                startGame(true);
-                  // 문장 즉시 표시 (폭발 효과로 보여주기)
+                // 게임 시작 후 바로 문장 표시 처리
                 setTimeout(() => {
-                    // 게임 화면 중앙 좌표 계산
-                    const centerX = canvas.width / 2;
-                    const centerY = topOffset + (canvas.height - topOffset) / 2;
+                    // 해당 문장 인덱스에 따라 홀수/짝수 문장 설정
+                    const isOdd = index % 2 === 0; // 0부터 시작하므로 index가 짝수면 실제로는 홀수 문장
+                      // 문장 분리 및 설정
+                    const sentenceText = sentences[index];
                     
-                    // 선택된 문장 표시
+                    // 줄바꿈 문자를 처리하여 두 줄로 분리 (이스케이프된 \\n과 실제 \n 모두 처리)
+                    const lines = sentenceText.split(/\\n|\n/);
+                    
+                    // 첫 줄과 두 번째 줄 설정 (없으면 빈 문자열)
+                    const line1 = lines[0] ? lines[0].trim() : "";
+                    const line2 = lines[1] ? lines[1].trim() : "";
+                    
+                    console.log(`문장 분리 결과 - 첫째줄: "${line1}", 둘째줄: "${line2}"`);
+                    
+                    // 문장 객체 생성
+                    const sentenceObj = { line1, line2 };
+                    
+                    // 홀수/짝수 위치에 문장 표시
                     if (isOdd) {
-                        // 질문 문장 표시
-                        startFireworks(sentenceText, index, centerX, centerY - 50);
-                        // 질문 문장의 이미지 표시
-                        showSentenceImage(index);
+                        // 홀수 문장 (질문 문장)
+                        currentQuestionSentence = sentenceObj;
+                        currentQuestionSentenceIndex = index;
                     } else {
-                        // 답변 문장 표시
-                        startFireworks(sentenceText, index, centerX, centerY + 50);
-                        // 관련 질문 문장의 이미지 표시
-                        const questionIndex = index - 1;
-                        if (questionIndex >= 0) {
-                            showSentenceImage(questionIndex);
-                        }
+                        // 짝수 문장 (답변 문장)
+                        currentAnswerSentence = sentenceObj;
+                        currentAnswerSentenceIndex = index;
                     }
-                }, 300);
-                
-                console.log(`게임 시작 후 문장 상태 체크:`);
-                console.log(`  - currentQuestionSentence:`, currentQuestionSentence);
-                console.log(`  - currentAnswerSentence:`, currentAnswerSentence);
-                console.log(`  - showPlayButton:`, showPlayButton);
-                console.log(`  - showPlayButtonQuestion:`, showPlayButtonQuestion);
-                console.log(`문장 ${index + 1} 표시됨`);
+                    
+                    console.log(`문장 ${index + 1} 바로 표시됨:`, sentenceObj);
+                }, 300); // 게임 시작 후 약간의 지연 시간을 두고 문장 표시
             }, 100);
             
             console.log(`문장 ${index + 1} 선택됨, 게임 시작 예정`);
@@ -4478,5 +4202,4 @@ function populateSentenceList() {
     
     console.log(`문장 목록 생성 완료: ${sentences.length}개 문장`);
     return sentenceList;
-} 
-
+}
