@@ -3849,14 +3849,9 @@ function startGame() {
     ctx.fillText("이미지 및 비디오 로딩 중... 잠시 후 다시 시도하세요.", canvas.width / 2, canvas.height / 2);
     return;
   }
-  
-  // 게임 시작 시 음성 합성 초기화
+    // 게임 시작 시 음성 합성 초기화
   initSpeechSynthesis().then(() => {
     console.log("음성 합성 시스템이 초기화되었습니다.");
-    // 음성 인식을 위해 빈 단어로 음성 합성을 한 번 트리거
-    speakWord("hello").catch(err => {
-      console.log("음성 시스템 웜업 중 오류 (무시됨):", err);
-    });
   }).catch(err => {
     console.warn("음성 합성 초기화 오류 (무시됨):", err);
   });
