@@ -1027,149 +1027,459 @@ async function getWordTranslation(word, targetLang = 'ko') {
   if (koreanWordDictionary[cleanedWord]) {
     return koreanWordDictionary[cleanedWord];
   }
-  
-  console.warn(`[번역 누락] '${cleanedWord}'의 한글 뜻을 mockTranslations에 추가해주세요.`);
+    console.warn(`[번역 누락] '${cleanedWord}'의 한글 뜻을 mockTranslations에 추가해주세요.`);
   return cleanedWord; // 괄호 없이 원래 단어 그대로 반환
 }
 
-let voicesPromise = null;
+// 음성 관련 상태 변수
 let _voices = [];
+let voicesPromise = null;
+let voicesLoaded = false;
 
 function getVoicesReliably() {
-    if (voicesPromise && _voices.length > 0) {
+    // 이미 로드된 음성이 있는 경우 바로 반환
+    if (voicesPromise && _voices.length > 0 && voicesLoaded) {
         return Promise.resolve(_voices);
     }
+    
+    // 새 Promise 생성
     if (!voicesPromise) {
         voicesPromise = new Promise((resolve, reject) => {
+            // 음성 목록을 가져와서 저장하는 함수
             const tryGetAndResolveVoices = () => {
-                const currentVoices = window.speechSynthesis.getVoices();
-                if (currentVoices.length) {
-                    _voices = currentVoices;
-                    resolve(_voices);
-                    return true;
+                try {
+                    const currentVoices = window.speechSynthesis.getVoices();
+                    if (currentVoices && currentVoices.length) {
+                        _voices = currentVoices;
+                        voicesLoaded = true;
+                        resolve(_voices);
+                        return true;
+                    }
+                } catch (e) {
+                    console.error("음성 목록 가져오기 오류:", e);
                 }
                 return false;
             };
+
+            // 즉시 음성 가져오기 시도
             if (tryGetAndResolveVoices()) return;
+
+            // onvoiceschanged 이벤트 사용 (크롬, 에지 등)
             if ('onvoiceschanged' in window.speechSynthesis) {
                 window.speechSynthesis.onvoiceschanged = () => {
                     if (tryGetAndResolveVoices()) {
                         window.speechSynthesis.onvoiceschanged = null;
                     } else {
-                         setTimeout(() => {
+                        // 이벤트 발생 후에도 음성이 없다면 짧은 지연 후 다시 시도
+                        setTimeout(() => {
                             if(tryGetAndResolveVoices()){
                                 window.speechSynthesis.onvoiceschanged = null;
                             } else {
-                                console.warn("getVoicesReliably: Voices NOT loaded even after onvoiceschanged + delay.");
-                                resolve([]);
+                                console.warn("getVoicesReliably: 이벤트 후에도 음성이 로드되지 않았습니다.");
+                                // 빈 배열이라도 반환하여 실패하지 않도록 함
+                                _voices = [];
+                                voicesLoaded = true;
+                                resolve(_voices);
                                 window.speechSynthesis.onvoiceschanged = null;
                             }
-                        }, 200);
+                        }, 300);
                     }
                 };
-                window.speechSynthesis.getVoices(); // Trigger 'onvoiceschanged'
+                // onvoiceschanged 이벤트 트리거
+                window.speechSynthesis.getVoices(); 
             } else {
+                // 이벤트가 지원되지 않는 경우 폴링 방식으로 시도
                 let attempts = 0;
-                const maxAttempts = 20;
+                const maxAttempts = 25;  // 최대 시도 횟수 증가
                 const intervalId = setInterval(() => {
                     attempts++;
                     if (tryGetAndResolveVoices()) {
                         clearInterval(intervalId);
                     } else if (attempts >= maxAttempts) {
                         clearInterval(intervalId);
-                        console.warn("getVoicesReliably: Voices NOT loaded after multiple polling attempts.");
-                        resolve([]);
+                        console.warn("getVoicesReliably: 여러 번 시도해도 음성이 로드되지 않았습니다.");
+                        // 빈 배열이라도 반환
+                        _voices = [];
+                        voicesLoaded = true;
+                        resolve(_voices);
                     }
                 }, 200);
             }
         }).catch(error => {
-            console.error("Error within getVoicesReliably promise:", error);
+            console.error("getVoicesReliably Promise 내 오류:", error);
             voicesPromise = null;
             _voices = [];
+            voicesLoaded = false;
             return [];
         });
     }
+    
     return voicesPromise;
 }
 
 async function getVoice(lang = 'en-US', gender = 'female') {
   let availableVoices;
   try {
+    // 음성 목록 가져오기
     availableVoices = await getVoicesReliably();
+    console.log(`getVoice: 가져온 음성 수: ${availableVoices.length}`);
   } catch (error) {
-    console.error("getVoice: Failed to load voices from getVoicesReliably:", error);
+    console.error("getVoice: 음성 로드 실패:", error);
     return null;
   }
 
+  // 음성 목록이 비어있으면 null 반환
   if (!availableVoices || availableVoices.length === 0) {
-      console.warn("getVoice: No voices available after getVoicesReliably resolved.");
+      console.warn("getVoice: 사용 가능한 음성이 없습니다.");
       return null;
   }
 
+  // 언어 정규화 (소문자로)
   const langNormalized = lang.toLowerCase();
-  const langVoices = availableVoices.filter(v => v.lang.toLowerCase() === langNormalized);
+  // 원하는 언어의 음성만 필터링
+  const langVoices = availableVoices.filter(v => {
+    try {
+      return v.lang.toLowerCase() === langNormalized;
+    } catch (e) {
+      console.warn("음성 필터링 중 오류:", e);
+      return false;
+    }
+  });
 
+  // 해당 언어의 음성이 없는 경우
   if (langVoices.length === 0) {
+    // 주 언어 코드만 사용해 다시 시도 (예: 'en-US' -> 'en')
     const primaryLang = langNormalized.split('-')[0];
-    const primaryLangVoices = availableVoices.filter(v => v.lang.toLowerCase().startsWith(primaryLang));
+    const primaryLangVoices = availableVoices.filter(v => {
+      try {
+        return v.lang.toLowerCase().startsWith(primaryLang);
+      } catch (e) {
+        return false;
+      }
+    });
+    
     if (primaryLangVoices.length > 0) {
         return primaryLangVoices[0];
     }
   } else {
+    // 성별에 따른 음성 선택
     if (gender === 'female') {
-        const femaleVoices = langVoices.filter(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha') || v.name.toLowerCase().includes('susan') || v.name.toLowerCase().includes('eva') || v.name.toLowerCase().includes('google us english') || v.name.toLowerCase().includes('여자') || v.name.toLowerCase().includes(' 여성'));
+        // 여성 음성 필터링
+        const femaleKeywords = ['female', 'zira', 'samantha', 'susan', 'eva', 
+                              'google us english', '여자', ' 여성', 'siri'];
+        
+        const femaleVoices = langVoices.filter(v => {
+          try {
+            const nameLower = v.name.toLowerCase();
+            return femaleKeywords.some(keyword => nameLower.includes(keyword));
+          } catch (e) {
+            return false;
+          }
+        });
+        
         if (femaleVoices.length > 0) return femaleVoices[0];
     } else if (gender === 'male') {
-        const maleVoices = langVoices.filter(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('tom') || v.name.toLowerCase().includes('google us english') || v.name.toLowerCase().includes('남자') || v.name.toLowerCase().includes(' 남성'));
+        // 남성 음성 필터링
+        const maleKeywords = ['male', 'daniel', 'tom', 'google us english', '남자', ' 남성'];
+        
+        const maleVoices = langVoices.filter(v => {
+          try {
+            const nameLower = v.name.toLowerCase();
+            return maleKeywords.some(keyword => nameLower.includes(keyword));
+          } catch (e) {
+            return false;
+          }
+        });
+        
         if (maleVoices.length > 0) return maleVoices[0];
     }
+    
+    // 성별 필터링에 실패한 경우 해당 언어의 첫 번째 음성 반환
     return langVoices[0];
   }
 
-  const defaultVoice = availableVoices.find(v => v.default);
+  // 기본 음성 찾기
+  const defaultVoice = availableVoices.find(v => {
+    try {
+      return v.default === true;
+    } catch (e) {
+      return false;
+    }
+  });
+  
   if (defaultVoice) return defaultVoice;
+  
+  // 어떤 음성이라도 있으면 첫 번째 것 반환
   if (availableVoices.length > 0) return availableVoices[0];
 
-  console.warn("getVoice: Exhausted all fallbacks. No voice found.");
+  console.warn("getVoice: 모든 대체 방법을 시도했으나 음성을 찾을 수 없습니다.");
   return null;
 }
 
 
-async function speakWord(word) {
-  const cleanWord = word.replace(/[^a-zA-Z0-9]/g, "").trim();
-  if (!cleanWord) return;
+// 웹 음성 합성 API 초기화 플래그
+let speechSynthesisInitialized = false;
 
+/**
+ * 웹 음성 합성 API를 초기화하고 음성을 가져오는 함수
+ */
+function initSpeechSynthesis() {
+  if (speechSynthesisInitialized) return Promise.resolve();
+  
+  return new Promise((resolve) => {
+    // speechSynthesis API가 있는지 확인
+    if (!window.speechSynthesis) {
+      console.error("음성 합성 API를 지원하지 않는 브라우저입니다.");
+      resolve();
+      return;
+    }
+    
+    // 모바일 디바이스 감지
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    console.log(`음성 합성 초기화 시작 (디바이스: ${isMobile ? (isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Mobile')) : 'PC'})`);
+    
+    // 이미 진행 중인 음성 취소
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        console.warn("음성 취소 중 오류:", e);
+      }
+    }
+    
+    // Chrome 버그 픽스 및 모바일 지원: resume()을 호출하여 일시정지된 음성 합성을 재개
+    try {
+      window.speechSynthesis.resume();
+      
+      // 모바일에서는 추가 resume 호출
+      if (isMobile) {
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.resume();
+          } catch (e) {}
+        }, 100);
+        
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.resume();
+          } catch (e) {}
+        }, 300);
+      }
+    } catch (e) {
+      console.warn("음성 합성 재개 중 오류:", e);
+    }
+    
+    // 모바일에서는 더미 발화로 시스템 준비
+    if (isMobile) {
+      try {
+        // iOS용 빈 발화
+        if (isIOS) {
+          const iosWakeup = new SpeechSynthesisUtterance("");
+          iosWakeup.volume = 0;
+          iosWakeup.lang = 'en-US';
+          window.speechSynthesis.speak(iosWakeup);
+        }
+        
+        // Android용 짧은 단어 발화
+        if (isAndroid) {
+          const androidWakeup = new SpeechSynthesisUtterance("ready");
+          androidWakeup.volume = 0;
+          androidWakeup.lang = 'en-US';
+          window.speechSynthesis.speak(androidWakeup);
+        }
+      } catch (e) {
+        console.warn("모바일 음성 합성 웨이크업 중 오류:", e);
+      }
+    }
+    
+    // 음성 미리 로드
+    getVoicesReliably()
+      .then(() => {
+        speechSynthesisInitialized = true;
+        console.log("음성 합성 초기화 완료");
+        resolve();
+      })
+      .catch(err => {
+        console.error("음성 초기화 오류:", err);
+        speechSynthesisInitialized = true; // 오류가 발생해도 초기화된 것으로 처리
+        resolve(); // 오류가 발생해도 계속 진행
+      });
+  });
+}
+
+/**
+ * 단어를 소리내어 읽어주는 함수
+ * @param {string} word - 읽을 단어
+ * @returns {Promise} - 음성 재생이 완료되면 resolve되는 Promise
+ */
+async function speakWord(word) {
+  // 단어에서 알파벳과 숫자만 유지
+  const cleanWord = word.replace(/[^a-zA-Z0-9]/g, "").trim();
+  if (!cleanWord) return Promise.resolve(); // 읽을 내용이 없으면 바로 종료
+  
+  // 모바일 디바이스 감지
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  
+  console.log(`모바일 단어 읽기 요청: "${cleanWord}", 디바이스: ${isMobile ? (isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Mobile')) : 'PC'}`);
+  
+  // 음성 합성 API 초기화
+  await initSpeechSynthesis();
+  
+  // 음성 합성 API가 없으면 종료
+  if (!window.speechSynthesis) {
+    console.warn("음성 합성 API를 지원하지 않는 브라우저입니다.");
+    return Promise.resolve();
+  }
+  
+  // 모바일에서는 추가 준비 작업
+  if (isMobile) {
+    try {
+      // 기존 음성 완전히 정리
+      window.speechSynthesis.cancel();
+      
+      // 모바일에서는 resume을 여러 번 호출
+      window.speechSynthesis.resume();
+      
+      // 추가 대기 시간
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // iOS에서는 더미 발화로 시스템 활성화
+      if (isIOS) {
+        const dummyUtter = new SpeechSynthesisUtterance("");
+        dummyUtter.volume = 0;
+        dummyUtter.lang = 'en-US';
+        window.speechSynthesis.speak(dummyUtter);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Android에서는 짧은 단어로 시스템 활성화
+      if (isAndroid) {
+        const testUtter = new SpeechSynthesisUtterance("test");
+        testUtter.volume = 0;
+        testUtter.lang = 'en-US';
+        window.speechSynthesis.speak(testUtter);
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+    } catch (e) {
+      console.warn("모바일 음성 합성 준비 중 오류:", e);
+    }
+  }
+  
+  // 이미 진행 중인 음성 취소
   try {
-    await getVoicesReliably();
-  } catch (error) {
-    console.error(`speakWord: Critical error ensuring voices were loaded for word "${cleanWord}":`, error);
-    return;
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
+  } catch (e) {
+    console.warn("기존 음성 취소 중 오류:", e);
   }
 
   return new Promise(async (resolve, reject) => {
     try {
+      console.log(`"${cleanWord}" 단어 읽기 시작`);
+      
+      // 발화 객체 생성
       const utter = new window.SpeechSynthesisUtterance(cleanWord);
       utter.lang = 'en-US';
-      utter.rate = 0.92;
+      utter.rate = 0.9; // 속도를 약간 느리게 조정
       utter.pitch = 1.0;
       utter.volume = 1.0;
-
-      const voice = await getVoice('en-US', 'female');
-      if (voice) {
-        utter.voice = voice;
-      } else {
-        console.warn(`speakWord: No specific voice found for 'en-US' female for word "${cleanWord}". Using system default for this lang if available.`);
+      
+      // 모바일에서는 더 긴 타임아웃 설정
+      const timeoutDuration = isMobile ? 15000 : 10000;
+      const timeoutId = setTimeout(() => {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {}
+        console.warn(`"${cleanWord}" 단어 읽기 타임아웃 (${timeoutDuration}ms)`);
+        resolve(); // 타임아웃이어도 오류로 처리하지 않음
+      }, timeoutDuration);
+      
+      // 음성 선택 시도
+      try {
+        const voice = await getVoice('en-US', 'female');
+        if (voice) {
+          utter.voice = voice;
+          console.log(`선택된 음성: ${voice.name}`);
+        } else {
+          console.warn(`'${cleanWord}' 단어의 en-US 여성 음성을 찾을 수 없습니다. 시스템 기본값 사용.`);
+        }
+      } catch (voiceErr) {
+        console.warn(`음성 가져오기 오류: ${voiceErr.message}, 기본값 사용`);
       }
-
-      utter.onend = () => resolve();
-      utter.onerror = (event) => {
-        console.error(`speakWord: Event 'onerror' for word "${cleanWord}". Error: ${event.error}`, event);
-        reject(event.error || new Error(`Unknown speech synthesis error for "${cleanWord}"`));
+      
+      // 이벤트 처리
+      utter.onstart = () => {
+        console.log(`"${cleanWord}" 음성 재생 시작됨`);
       };
+      
+      utter.onend = () => {
+        clearTimeout(timeoutId);
+        console.log(`"${cleanWord}" 단어 읽기 완료`);
+        resolve();
+      };
+      
+      utter.onerror = (event) => {
+        clearTimeout(timeoutId);
+        console.error(`"${cleanWord}" 단어 읽기 오류: ${event.error || '알 수 없는 오류'}`, event);
+        
+        // 오류가 발생해도 Promise를 reject하지 않고 resolve하여 앱 실행을 계속함
+        resolve();
+      };
+      
+      // 음성 합성 시작
       window.speechSynthesis.speak(utter);
+      
+      // 모바일에서는 추가 처리
+      if (isMobile) {
+        // 음성 시작 후 즉시 resume 호출 (모바일에서 중요)
+        setTimeout(() => {
+          try {
+            window.speechSynthesis.resume();
+          } catch (e) {}
+        }, 50);
+        
+        // iOS에서는 추가로 한 번 더
+        if (isIOS) {
+          setTimeout(() => {
+            try {
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+            } catch (e) {}
+          }, 200);
+        }
+        
+        // Android에서는 주기적인 resume 호출
+        if (isAndroid) {
+          const resumeInterval = setInterval(() => {
+            try {
+              if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.resume();
+              } else {
+                clearInterval(resumeInterval);
+              }
+            } catch (e) {
+              clearInterval(resumeInterval);
+            }
+          }, 500);
+          
+          // 최대 10초 후 정리
+          setTimeout(() => {
+            clearInterval(resumeInterval);
+          }, 10000);
+        }
+      }
+      
     } catch (error) {
-        console.error(`speakWord: Exception during speakWord execution for "${cleanWord}":`, error);
-        reject(error);
+      console.error(`"${cleanWord}" 단어 읽기 중 예외 발생:`, error);
+      
+      // 예외가 발생해도 Promise를 reject하지 않고 resolve하여 앱 실행을 계속함
+      resolve();
     }
   });
 }
@@ -3539,14 +3849,36 @@ function startGame() {
     ctx.fillText("이미지 및 비디오 로딩 중... 잠시 후 다시 시도하세요.", canvas.width / 2, canvas.height / 2);
     return;
   }
-  isGameRunning = true; isGamePaused = false;
+  
+  // 게임 시작 시 음성 합성 초기화
+  initSpeechSynthesis().then(() => {
+    console.log("음성 합성 시스템이 초기화되었습니다.");
+    // 음성 인식을 위해 빈 단어로 음성 합성을 한 번 트리거
+    speakWord("hello").catch(err => {
+      console.log("음성 시스템 웜업 중 오류 (무시됨):", err);
+    });
+  }).catch(err => {
+    console.warn("음성 합성 초기화 오류 (무시됨):", err);
+  });
+  
+  isGameRunning = true; 
+  isGamePaused = false;
   document.getElementById('pauseBtn').textContent = 'PAUSE';
-  if (bgmAudio) { bgmAudio.pause(); }
+  
+  // 배경 음악 설정
+  if (bgmAudio) { 
+    bgmAudio.pause(); 
+  }
   bgmAudio = new Audio(bgmFiles[bgmIndex]);
-  bgmAudio.volume = isMuted ? 0 : 0.021; bgmAudio.loop = true;
+  bgmAudio.volume = isMuted ? 0 : 0.021; 
+  bgmAudio.loop = true;
+  
+  // 배경 음악 재생
   const playPromise = bgmAudio.play();
   if (playPromise !== undefined) {
-    playPromise.catch(error => { console.error('BGM play error on start:', error); });
+    playPromise.catch(error => { 
+      console.error('BGM play error on start:', error); 
+    });
   }
   if (coffeeSteamVideo && coffeeVideoAssetReady) {
     coffeeSteamVideo.currentTime = 0;
@@ -3737,14 +4069,65 @@ function handleCanvasInteraction(clientX, clientY, event) {
             clientY >= answerBoundingBox.y && clientY <= answerBoundingBox.y + answerBoundingBox.height;
         
         // 특정 단어가 클릭되었는지 확인
-        for (const wordRect of centerSentenceWordRects) {
-          if (clientX >= (wordRect.x - expandedMargin/2) && clientX <= (wordRect.x + wordRect.w + expandedMargin/2) &&
-              clientY >= (wordRect.y - wordRect.h / 2 - expandedMargin/2) && clientY <= (wordRect.y + wordRect.h / 2 + expandedMargin/2) ) {
-            window.speechSynthesis.cancel();
-            speakWord(wordRect.word).catch(err => console.error(`Error speaking word "${wordRect.word}":`, err));
+        for (const wordRect of centerSentenceWordRects) {          if (clientX >= (wordRect.x - expandedMargin/2) && clientX <= (wordRect.x + wordRect.w + expandedMargin/2) &&
+              clientY >= (wordRect.y - wordRect.h / 2 - expandedMargin/2) && clientY <= (wordRect.y + wordRect.h / 2 + expandedMargin/2) ) {            // 모든 진행 중인 음성 취소
+            try {
+              if (window.speechSynthesis) window.speechSynthesis.cancel();
+            } catch (e) {
+              console.warn("음성 취소 중 오류:", e);
+            }
+            
+            // 모바일 디바이스 감지
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            
+            console.log(`"${wordRect.word}" 단어를 터치했습니다. 음성 합성 시작... (디바이스: ${isMobile ? (isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Mobile')) : 'PC'})`);
+            
+            // 모바일에서는 즉시 음성 합성 재준비
+            if (isMobile && window.speechSynthesis) {
+              try {
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.resume();
+                
+                // iOS에서는 터치 즉시 더미 발화로 시스템 활성화
+                if (isIOS) {
+                  const quickDummy = new SpeechSynthesisUtterance("");
+                  quickDummy.volume = 0;
+                  quickDummy.lang = 'en-US';
+                  window.speechSynthesis.speak(quickDummy);
+                }
+                
+                // Android에서는 테스트 단어로 활성화
+                if (isAndroid) {
+                  const quickTest = new SpeechSynthesisUtterance("hi");
+                  quickTest.volume = 0;
+                  quickTest.lang = 'en-US';
+                  window.speechSynthesis.speak(quickTest);
+                }
+              } catch (e) {
+                console.warn("모바일 음성 합성 즉시 준비 중 오류:", e);
+              }
+            }
+            
+            // 단어 읽기 - 모바일에서는 약간의 지연을 추가
+            const speakDelay = isMobile ? (isAndroid ? 200 : 150) : 0;
+            
+            setTimeout(() => {
+              speakWord(wordRect.word)
+                .then(() => console.log(`"${wordRect.word}" 단어 읽기 완료`))
+                .catch(err => console.error(`"${wordRect.word}" 단어 읽기 오류:`, err));
+            }, speakDelay);
+            
+            // 기존 단어 번역 타이머 제거
             if (wordTranslationTimeoutId) clearTimeout(wordTranslationTimeoutId);
             if (activeWordTranslation) activeWordTranslation.show = false;
-            activeWordTranslation = null; isActionLocked = true;
+            
+            // 액션 잠금 설정
+            activeWordTranslation = null;
+            isActionLocked = true;
+            
+            // 단어 번역 가져오기
             getWordTranslation(wordRect.word).then(translation => {
                 activeWordTranslation = {
                     word: wordRect.word, translation: translation, x: wordRect.x, y: wordRect.y,
@@ -3800,6 +4183,56 @@ function handleCanvasInteraction(clientX, clientY, event) {
 
 canvas.addEventListener('touchstart', e => {
   const touch = e.touches[0];
+  
+  // 모바일 디바이스 감지
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  
+  // 터치 이벤트 시 음성 합성 초기화 시도 (모바일에서 사용자 제스처 이벤트 필요)
+  if (window.speechSynthesis && isMobile) {
+    try {
+      // 모바일에서는 매번 음성 합성 상태를 리셋하고 재초기화
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+      
+      // iOS에서는 더미 발화로 시스템 웨이크업
+      if (isIOS) {
+        const dummyUtterance = new SpeechSynthesisUtterance("");
+        dummyUtterance.volume = 0;
+        dummyUtterance.lang = 'en-US';
+        window.speechSynthesis.speak(dummyUtterance);
+      }
+      
+      // 안드로이드에서는 짧은 단어로 시스템 활성화
+      if (isAndroid) {
+        speechSynthesisInitialized = false; // 강제 재초기화
+        const testUtterance = new SpeechSynthesisUtterance("test");
+        testUtterance.volume = 0;
+        testUtterance.lang = 'en-US';
+        window.speechSynthesis.speak(testUtterance);
+      }
+      
+      // 초기화 진행
+      if (!speechSynthesisInitialized || isMobile) {
+        initSpeechSynthesis().then(() => {
+          console.log("모바일 터치 이벤트에서 음성 합성 초기화 완료");
+        }).catch(err => {
+          console.warn("모바일 터치 이벤트에서 음성 합성 초기화 실패", err);
+        });
+      }
+    } catch (e) {
+      console.warn("모바일 음성 합성 준비 중 오류:", e);
+    }
+  } else if (!speechSynthesisInitialized) {
+    // PC에서는 기존 방식으로 초기화
+    initSpeechSynthesis().then(() => {
+      console.log("터치 이벤트에서 음성 합성 초기화 완료");
+    }).catch(err => {
+      console.warn("터치 이벤트에서 음성 합성 초기화 실패", err);
+    });
+  }
+  
   handleCanvasInteraction(touch.clientX, touch.clientY, e);
 }, { passive: false });
 
