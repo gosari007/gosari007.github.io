@@ -4,7 +4,7 @@
 }
 
 /* 이미지 관련 요소들에 테두리 제거 */
-img, image, #sentenceImage, #sentenceVideo {
+img, image, video, #sentenceImage, #sentenceVideo {
   border: 0 none transparent !important;
   outline: 0 none transparent !important;
   -webkit-tap-highlight-color: transparent;
@@ -219,7 +219,7 @@ html, body {
   outline: 0 none transparent !important;
 }
 
-#sentenceImage, #sentenceVideo {
+#sentenceImage {
   max-width: 100.24vw; /* 화면 너비의 100.24%를 넘지 않도록 설정 (마지막 1% 증가) */
   max-height: 50.13vh; /* 화면 높이의 50.13%를 넘지 않도록 설정 (마지막 1% 증가) */
   border-radius: 0 !important; /* 모서리 둥글기 완전 제거 */
@@ -232,8 +232,139 @@ html, body {
   transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 1.5초 ease-out 애니메이션 */
 }
 
-/* 이미지/비디오가 나타날 때의 애니메이션 클래스 */
-#sentenceImage.show, #sentenceVideo.show {
+/* 이미지가 나타날 때의 애니메이션 클래스 */
+#sentenceImage.show {
   transform: scale(1); /* 원본 크기로 확대 */
   opacity: 1; /* 완전 불투명으로 변경 */
+}
+
+/* 동영상 요소에 대한 스타일 */
+#sentenceVideo {
+  max-width: 100.24vw; /* 화면 너비의 100.24%를 넘지 않도록 설정 */
+  max-height: 50.13vh; /* 화면 높이의 50.13%를 넘지 않도록 설정 */
+  border-radius: 0 !important; /* 모서리 둥글기 완전 제거 */
+  box-shadow: none !important; /* 그림자 완전 제거 */
+  border: 0 none transparent !important; /* 테두리 완전 제거 */
+  outline: 0 none transparent !important; /* 외곽선 완전 제거 */
+  background-color: transparent !important; /* 배경색 투명 */
+  transform: scale(0); /* 초기 크기를 0으로 설정 */
+  opacity: 0; /* 초기 투명도를 0으로 설정 */
+  transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 1.5초 ease-out 애니메이션 */
+}
+
+/* 동영상 컨트롤러 바의 검은색 반투명 배경만 투명하게 처리 */
+#sentenceVideo::-webkit-media-controls-panel {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+#sentenceVideo::-webkit-media-controls-enclosure {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 동영상 컨트롤러 바의 선 두께를 50%로 줄임 */
+#sentenceVideo::-webkit-media-controls-timeline,
+video::-webkit-media-controls-timeline {
+  height: 1px !important; /* 선 두께 50% 가늘게 설정 */
+}
+
+/* 동영상 중앙 플레이 버튼 숨기기 */
+#sentenceVideo::-webkit-media-controls-overlay-play-button,
+video::-webkit-media-controls-overlay-play-button {
+  opacity: 0 !important; /* 버튼 완전히 숨김 */
+  visibility: hidden !important; /* 버튼 숨김 */
+  display: none !important; /* 버튼 요소 자체를 숨김 */
+  pointer-events: none !important; /* 클릭 이벤트 차단 */
+}
+
+/* 동영상 컨트롤러 요소들이 제대로 보이고 작동하도록 추가 스타일 */
+#sentenceVideo::-webkit-media-controls,
+video::-webkit-media-controls {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* 동영상 자체를 클릭했을 때도 재생/일시정지 가능하도록 설정 */
+#sentenceVideo, video {
+  cursor: pointer !important;
+}
+
+/* 비디오 플레이어 터치 최적화 스타일 - 모든 컨트롤 보이게 설정 */
+.video-touchable {
+  -webkit-tap-highlight-color: transparent !important; /* 탭 하이라이트 제거 */
+}
+
+/* 중앙 플레이 버튼을 확실하게 숨기는 추가 클래스 */
+.hide-center-play-button::-webkit-media-controls-overlay-play-button,
+.hide-center-play-button::-webkit-media-controls-overlay-play-button * {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 모든 비디오 컨트롤 요소 표시 */
+#sentenceVideo::-webkit-media-controls-fullscreen-button,
+video::-webkit-media-controls-fullscreen-button,
+#sentenceVideo::-webkit-media-controls-mute-button,
+video::-webkit-media-controls-mute-button,
+#sentenceVideo::-webkit-media-controls-volume-slider,
+video::-webkit-media-controls-volume-slider,
+#sentenceVideo::-webkit-media-controls-toggle-closed-captions-button,
+video::-webkit-media-controls-toggle-closed-captions-button,
+#sentenceVideo::-webkit-media-controls-play-button,
+video::-webkit-media-controls-play-button,
+#sentenceVideo::-webkit-media-controls-current-time-display,
+video::-webkit-media-controls-current-time-display,
+#sentenceVideo::-webkit-media-controls-time-remaining-display,
+video::-webkit-media-controls-time-remaining-display,
+#sentenceVideo::-webkit-media-controls-timeline,
+video::-webkit-media-controls-timeline {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+/* 플레이 버튼만 30% 크게 (기존 10% + 추가 20%) */
+#sentenceVideo::-webkit-media-controls-play-button,
+video::-webkit-media-controls-play-button {
+  transform: scale(1.3) !important; /* 플레이 버튼 크기 30% 증가 */
+  margin: 0 3px !important; /* 여백 약간 더 추가하여 다른 컨트롤과 겹치지 않도록 */
+}
+
+/* 볼륨 컨트롤 주변 수평선 제거 */
+#sentenceVideo::-webkit-media-controls-volume-slider-container,
+video::-webkit-media-controls-volume-slider-container,
+#sentenceVideo::-webkit-media-controls-volume-slider,
+video::-webkit-media-controls-volume-slider {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* 볼륨 슬라이더의 수평선 제거 */
+#sentenceVideo::-webkit-media-controls-volume-slider::before,
+#sentenceVideo::-webkit-media-controls-volume-slider::after,
+video::-webkit-media-controls-volume-slider::before,
+video::-webkit-media-controls-volume-slider::after {
+  display: none !important;
+  opacity: 0 !important;
+  border: none !important;
+}
+
+/* 스피커 아이콘 주변 실선 제거 */
+#sentenceVideo::-webkit-media-controls-mute-button,
+video::-webkit-media-controls-mute-button {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 모든 컨트롤 요소 사이의 구분선 제거 */
+#sentenceVideo::-webkit-media-controls *,
+video::-webkit-media-controls * {
+  border: none !important;
+  box-shadow: none !important;
 }
