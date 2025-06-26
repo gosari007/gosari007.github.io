@@ -263,10 +263,17 @@ html, body {
   background-color: transparent !important;
 }
 
-/* 동영상 컨트롤러 바의 선 두께를 50%로 줄임 */
+/* 동영상 컨트롤러 바(타임라인) 숨기기 */
 #sentenceVideo::-webkit-media-controls-timeline,
 video::-webkit-media-controls-timeline {
-  height: 1px !important; /* 선 두께 50% 가늘게 설정 */
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
 }
 
 /* 동영상 중앙 플레이 버튼 숨기기 */
@@ -367,4 +374,73 @@ video::-webkit-media-controls-mute-button {
 video::-webkit-media-controls * {
   border: none !important;
   box-shadow: none !important;
+}
+
+/* 시간 표시(시계) 숨기기 */
+#sentenceVideo::-webkit-media-controls-current-time-display,
+video::-webkit-media-controls-current-time-display,
+#sentenceVideo::-webkit-media-controls-time-remaining-display,
+video::-webkit-media-controls-time-remaining-display {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 스피커(음소거 버튼)만 숨기기 */
+#sentenceVideo::-webkit-media-controls-mute-button,
+video::-webkit-media-controls-mute-button {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 볼륨 슬라이더(수평바) 숨기기 */
+#sentenceVideo::-webkit-media-controls-volume-slider,
+video::-webkit-media-controls-volume-slider,
+#sentenceVideo::-webkit-media-controls-volume-slider-container,
+video::-webkit-media-controls-volume-slider-container {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 화면확대(전체화면) 버튼 숨기기 */
+#sentenceVideo::-webkit-media-controls-fullscreen-button,
+video::-webkit-media-controls-fullscreen-button {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 오버플로우 메뉴 버튼(점 3개) 숨기기 */
+#sentenceVideo::-webkit-media-controls-overflow-button,
+video::-webkit-media-controls-overflow-button {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
 }
