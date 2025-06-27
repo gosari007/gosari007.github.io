@@ -32,14 +32,14 @@ function showNewSentenceMedia(realSentenceNumber) {
   resetMediaElements();
 
   // 먼저 MP4 파일이 존재하는지 확인
-  checkFileExists(`images/${realSentenceNumber}.mp4`)
+  checkFileExists(`images/top/${realSentenceNumber}.mp4`)
     .then(exists => {
       if (exists) {
         // MP4 파일이 존재하면 비디오 요소 사용
         showVideoContent(realSentenceNumber);
       } else {
         // MP4 파일이 없으면 이미지 파일(jpg) 확인
-        checkFileExists(`images/${realSentenceNumber}.jpg`)
+        checkFileExists(`images/top/${realSentenceNumber}.jpg`)
           .then(imageExists => {
             if (imageExists) {
               // JPG 파일이 존재하면 이미지 요소 사용
@@ -78,7 +78,7 @@ function showImageContent(realSentenceNumber) {
   sentenceImage.classList.remove('show');
   
   // 이미지 경로 설정
-  sentenceImage.src = `images/${realSentenceNumber}.jpg`;
+  sentenceImage.src = `images/top/${realSentenceNumber}.jpg`;
   
   // 이미지 로드 이벤트
   sentenceImage.onload = function() {
@@ -150,7 +150,7 @@ function showVideoContent(realSentenceNumber) {
   sentenceVideo.style.display = 'block';
   
   // 비디오 소스 설정
-  sentenceVideo.src = `images/${realSentenceNumber}.mp4`;
+  sentenceVideo.src = `images/top/${realSentenceNumber}.mp4`;
   sentenceVideo.autoplay = false; // 자동 재생 비활성화
   sentenceVideo.muted = false; // 음소거 해제 (자동재생 방지)
   

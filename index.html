@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mobile Galaga</title>
   <link rel="stylesheet" href="style.css?v=1.6" />
+  <link rel="stylesheet" href="background.css?v=1.0" />
 </head>
 <body>  <!-- 드롭다운 버튼 (START 버튼 왼쪽) -->
   <div id="sentenceDropdown">
@@ -33,6 +34,7 @@
   <!-- 김 효과를 위한 숨겨진 비디오 요소 -->  <video id="coffeeSteamVideo" src="images/coffee6.webm" autoplay loop muted playsinline style="display: none;"></video>
   <script src="script.js"></script>
   <script src="dropdown.js"></script>
+  <script src="background.js"></script>
   <script src="sentenceImage.js"></script>
   <script>
     // 동영상 플레이어 컨트롤 향상을 위한 추가 스크립트
@@ -149,5 +151,10 @@
       observer.observe(document.body, { childList: true, subtree: true });
     });
   </script>
+  
+  <!-- 하단 이미지 (게임 중에만 표시) -->
+  <div id="gameBottomImageContainer" style="position: fixed; bottom: 0; left: 0; width: 100%; background: transparent; z-index: 9999; padding: 0; text-align: center; display: none;">
+    <img id="gameBottomImage" src="images/bottom/1.jpg" style="width: 100%; max-height: 150px; height: auto; object-fit: cover; display: block;" alt="Game Bottom Image" />
+  </div>
 </body>
 </html>

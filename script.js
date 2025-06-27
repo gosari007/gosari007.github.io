@@ -1707,7 +1707,7 @@ const WORD_ANIM_MAX_HEIGHT = 18;
 
 // --- START: 의문사 복제본 관련 변수들 ---
 let questionWordClones = []; // 생성된 의문사 복제본들을 저장
-const CLONE_OFFSET_Y = 40; // 의문사 복제본이 원본에서 위로 얼마나 떨어져 있을지 (10px 내림)
+const CLONE_OFFSET_Y = 30; // 의문사 복제본이 원본에서 위로 얼마나 떨어져 있을지 (기존 35px에서 5px 더 줄임)
 let cloneCreatedForCurrentQuestion = false; // 현재 질문에서 복제본이 이미 생성되었는지 추적
 // --- END: 의문사 복제본 관련 변수들 ---
 
@@ -2937,7 +2937,7 @@ function drawCenterSentence() {
     ctx.globalAlpha = centerAlpha;
 
     const mainRenderAreaYCenter = topOffset + (canvas.height - topOffset) / 2;
-    const questionBlockCenterY = mainRenderAreaYCenter + SENTENCE_VERTICAL_ADJUSTMENT;
+    const questionBlockCenterY = mainRenderAreaYCenter + SENTENCE_VERTICAL_ADJUSTMENT - 15; // 15px 위로 이동 (기존 10px + 추가 5px)
 
     let questionBlockContext = { verbColored: false, auxColored: false, verbFoundInPattern2: false };
     let questionDrawOutput = { lastY: questionBlockCenterY - LINE_HEIGHT, wordRects: [] };
@@ -2988,11 +2988,11 @@ function drawCenterSentence() {
         let topYForAnswerBlock;
 
         if (currentQuestionSentence) {
-            topYForAnswerBlock = questionDrawOutput.lastY + ANSWER_OFFSET_Y;
+            topYForAnswerBlock = questionDrawOutput.lastY + ANSWER_OFFSET_Y - 30; // 30px 위로 이동 (기존 20px + 추가 10px)
         } else {
             let effectiveCenterY = mainRenderAreaYCenter;
             if (answerLines.length === 2) effectiveCenterY -= 10 / 2;
-             topYForAnswerBlock = effectiveCenterY - (answerBlockHeight / 2);
+             topYForAnswerBlock = effectiveCenterY - (answerBlockHeight / 2) - 30; // 30px 위로 이동 (기존 20px + 추가 10px)
         }
 
         const answerFirstLineCenterY = topYForAnswerBlock + LINE_HEIGHT / 2;
@@ -3702,6 +3702,11 @@ function update(delta) {
             sentenceIndex = (sentenceIndex + 1) % sentences.length;
             localStorage.setItem('sentenceIndex', sentenceIndex.toString());
             sounds.explosion.play();
+            
+            // 첫 번째 폭발 시 하단 이미지 표시
+            if (typeof window.showGameBottomImage === 'function') {
+              window.showGameBottomImage();
+            }
         }
         enemies.splice(ei, 1); bullets.splice(bi, 1);
       }
@@ -3849,6 +3854,12 @@ function startGame() {
     ctx.fillText("이미지 및 비디오 로딩 중... 잠시 후 다시 시도하세요.", canvas.width / 2, canvas.height / 2);
     return;
   }
+  
+  // 게임 시작 시 하단 이미지 상태 초기화
+  if (typeof window.onGameStart === 'function') {
+    window.onGameStart();
+  }
+  
     // 게임 시작 시 음성 합성 초기화
   initSpeechSynthesis().then(() => {
     console.log("음성 합성 시스템이 초기화되었습니다.");
@@ -3931,6 +3942,12 @@ function stopGame() {
   if (currentSentenceAudio) {
       currentSentenceAudio.pause(); currentSentenceAudio.currentTime = 0; currentSentenceAudio = null;
   }
+  
+  // 게임 종료 시 하단 이미지 숨김
+  if (typeof window.hideGameBottomImage === 'function') {
+    window.hideGameBottomImage();
+  }
+  
   resetGameStateForStartStop();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
