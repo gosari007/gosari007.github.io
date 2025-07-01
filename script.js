@@ -2713,7 +2713,9 @@ function drawSingleSentenceBlock(sentenceObject, baseY, isQuestionBlock, blockCo
     const isCurrentBlockContentQuestionType = isQuestion(sentenceFullText);    for (let i = 0; i < lines.length; i++) {
         const lineText = lines[i];
         let currentLineCenterY = yFirstLineTextCenter + i * LINE_HEIGHT;
-          // 각 줄마다 색상 플래그 초기화 (줄별로 독립적으로 색상 처리)
+          // 모바일 환경 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // 각 줄마다 색상 플래그 초기화 (줄별로 독립적으로 색상 처리)
         // 의문문과 답변문을 분리해서 처리
         if (isCurrentBlockContentQuestionType) {
             // 의문문 문장일 경우, 원래 색상 로직 유지
@@ -2742,7 +2744,10 @@ function drawSingleSentenceBlock(sentenceObject, baseY, isQuestionBlock, blockCo
         } else {
             if (i === 1) currentLineCenterY += 10;
         }
-
+        // 두번째 문장만 핸드폰(모바일)에서 y축 6px 더 위로 올림 (기존 -5px에서 -11px로)
+        if (isMobile && i === 1) {
+            currentLineCenterY -= 11;
+        }
 
         const words = lineText.split(" ");
         let wordMetrics = words.map(w => ctx.measureText(w));
