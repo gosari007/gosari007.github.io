@@ -3703,7 +3703,12 @@ function update(delta) {
             
             // 모든 문장에 대해 상단 이미지 표시 (조건 제거)
             if (typeof showSentenceImage === 'function') {
-                showSentenceImage(globalIndexOfSentence);
+                if (explosionCount === 0) {
+                    // 첫번째 폭발(게임 시작 후 첫번째)에서는 setTimeout 없이 바로 미디어 표시
+                    showSentenceImage(globalIndexOfSentence);
+                } else {
+                    showSentenceImage(globalIndexOfSentence);
+                }
             }
             
             startFireworks(sentenceToFirework, globalIndexOfSentence, e.x + e.w / 2, e.y + e.h / 2);
