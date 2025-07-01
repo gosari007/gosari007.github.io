@@ -159,6 +159,10 @@
       
       // body 전체 관찰
       observer.observe(document.body, { childList: true, subtree: true });
+
+      // 하단 미디어를 중앙 기준으로 크롭하고 싶을 때만!
+      document.getElementById('bottomImage')?.classList.add('center-crop');
+      document.getElementById('bottomVideo')?.classList.add('center-crop');
     });
   </script>
 </body>
