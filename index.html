@@ -160,6 +160,99 @@
       // body 전체 관찰
       observer.observe(document.body, { childList: true, subtree: true });
     });
+
+    let isDropdownMp3Playing = false;
+    let dropdownMp3Audio = null;
+    let dropdownMp3Index = 0;
+
+    function stopDropdownMp3Playback() {
+      isDropdownMp3Playing = false;
+      if (dropdownMp3Audio) {
+        dropdownMp3Audio.pause();
+        dropdownMp3Audio = null;
+      }
+    }
+
+    function playAllSentenceMp3sFromStart() {
+      stopDropdownMp3Playback();
+      isDropdownMp3Playing = true;
+      dropdownMp3Index = 0;
+      function playNext() {
+        if (!isDropdownMp3Playing || dropdownMp3Index >= 96) {
+          stopDropdownMp3Playback();
+          return;
+        }
+        const audioFilePath = `sounds/96_audio/${dropdownMp3Index + 1}.mp3`;
+        dropdownMp3Audio = new Audio(audioFilePath);
+        dropdownMp3Audio.volume = 0.8;
+        dropdownMp3Audio.onended = () => {
+          dropdownMp3Index++;
+          playNext();
+        };
+        dropdownMp3Audio.onerror = () => {
+          dropdownMp3Index++;
+          playNext();
+        };
+        dropdownMp3Audio.play();
+      }
+      playNext();
+    }
+
+    function initializeSentenceDropdown() {
+      const dropdownBtn = document.getElementById('dropdownBtn');
+      const sentenceList = document.getElementById('sentenceList');
+      if (!dropdownBtn || !sentenceList) return;
+
+      const originalBtnHTML = dropdownBtn.innerHTML;
+      const originalBtnFontSize = dropdownBtn.style.fontSize || '47px';
+
+      dropdownBtn.addEventListener('click', function(event) {
+        if (sentenceList.style.display === 'block') {
+            // 닫기
+            sentenceList.style.display = 'none';
+            if (window.isDropdownPause) {
+                togglePause();
+                window.isDropdownPause = false;
+            }
+            setTopButtonsDisabled(false); // 버튼 활성화
+            toggleBottomMediaPause();
+            stopDropdownMp3Playback();
+            dropdownBtn.innerHTML = originalBtnHTML;
+            dropdownBtn.style.fontSize = originalBtnFontSize;
+            dropdownBtn.style.lineHeight = '';
+            dropdownBtn.style.minWidth = '';
+            dropdownBtn.style.minHeight = '';
+            dropdownBtn.style.padding = '';
+        } else {
+            // 열기
+            populateSentenceList();
+            sentenceList.style.display = 'block';
+            setTimeout(() => {
+                const activeItem = sentenceList.querySelector(`.sentence-item:nth-child(${window.sentenceIndex + 1})`);
+                if (activeItem) activeItem.scrollIntoView({ behavior: 'auto', block: 'center' });
+            }, 100);
+            if (window.isGameRunning && !window.isGamePaused) {
+                togglePause();
+                window.isDropdownPause = true;
+            }
+            setTopButtonsDisabled(true); // 버튼 비활성화
+            toggleBottomMediaPause();
+            playAllSentenceMp3sFromStart();
+            dropdownBtn.style.position = 'relative';
+            dropdownBtn.innerHTML = `
+              <svg width="34" height="34" viewBox="0 0 34 34"
+                style="display:block; position:relative; left:19px; top:19px;">
+                <rect x="6" y="13" width="22" height="12" fill="white" />
+              </svg>
+            `;
+            dropdownBtn.style.fontSize = '6px';
+            dropdownBtn.style.lineHeight = '1';
+            dropdownBtn.style.minWidth = '0';
+            dropdownBtn.style.minHeight = '0';
+            dropdownBtn.style.padding = '0';
+        }
+      });
+    }
   </script>
 </body>
 </html>

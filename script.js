@@ -546,7 +546,7 @@ const MAIN_VERB_PRIORITY = [
   "run", "jump", "walk", "swim", "fly", "climb", "ride", "drive", 
   // 생성/파괴 동사
   "make", "build", "create", "destroy", "break",
-  // 일반적인 중요 행동
+  // 일반 동사
   "eat", "drink", "sleep", "read", "write", "play", "work",
   // 소통 동사
   "say", "tell", "speak", "talk", "shout", "whisper",
@@ -749,7 +749,7 @@ async function getWordTranslation(word, targetLang = 'ko') {
     "he's": "그는 ~이다", "hes": "그는 ~이다", "she's": "그녀는 ~이다", "shes": "그녀는 ~이다",
     "you're": "너는 ~이다", "youre": "너는 ~이다", "we're": "우리는 ~이다",
     "they're": "그들은 ~이다", "theyre": "그들은 ~이다", "i'm": "나는 ~이다", "im": "나는 ~이다",
-    "i'll": "나는 ~할 것이다", "ill": "나는 ~할 것이다/아픈",
+    "i'll": "나는 ~할 것이다", "ill": "나는 ~할 것이다/아픔",
     "you'll": "너는 ~할 것이다", "youll": "너는 ~할 것이다",
     "he'll": "그는 ~할 것이다", "hell": "그는 ~할 것이다/지옥",
     "she'll": "그녀는 ~할 것이다", "shell": "그녀는 ~할 것이다/조개껍질",
@@ -1316,7 +1316,7 @@ function initSpeechSynthesis() {
 /**
  * 단어를 소리내어 읽어주는 함수
  * @param {string} word - 읽을 단어
- * @returns {Promise} - 음성 재생이 완료되면 resolve되는 Promise
+ * @returns {Promise} - 음성 합성이 완료되면 resolve되는 Promise
  */
 async function speakWord(word) {
   // 단어에서 알파벳과 숫자만 유지
@@ -1909,7 +1909,7 @@ function updateQuestionWordClones(currentTime) {
         
         // 각 문자 위치도 업데이트
         clone.charPositions.forEach(cp => {
-          cp.currentY = cp.originalY + (clone.targetY - clone.originalY) * easedT;
+          cp.currentY = cp.originalY + (clone.targetY - cp.originalY) * easedT;
         });
       } else {
         // 이동 완료, 정지 상태로 전환
@@ -3716,7 +3716,7 @@ function update(delta) {
             localStorage.setItem('sentenceIndex', sentenceIndex.toString());
             sounds.explosion.play();
             
-            // 폭발 횟수 증가 및 첫 번째 폭발에서 하단 이미지 시작
+            // 폭발 횟수 증가 및 첫 번째 폭발에서 하단 미디어 시작
             explosionCount++;
             if (explosionCount === 1 && typeof startBottomMediaShow === 'function') {
                 console.log("첫 번째 폭발 감지: 하단 미디어 즉시 시작");
@@ -4464,7 +4464,18 @@ function initializeSentenceDropdown() {
         if (sentenceList.style.display === 'block') {
             console.log("드롭다운 닫기");
             sentenceList.style.display = 'none';
-            // 화살표 모양 유지 (변경 없음)
+            // 드롭다운 닫힐 때 게임 resume 및 버튼 활성화
+            if (isDropdownPause) {
+                togglePause();
+                isDropdownPause = false;
+                setTopButtonsDisabled(false);
+            }
+            // 하단 미디어가 일시정지 상태였다면 재생
+            if (isDropdownBottomMediaPaused) {
+                if (typeof toggleBottomMediaPause === 'function') toggleBottomMediaPause();
+                isDropdownBottomMediaPaused = false;
+            }
+            stopDropdownMp3Playback();
         } else {
             console.log("드롭다운 열기");
             // 항상 목록 새로 생성하여 최신 상태 유지
@@ -4473,8 +4484,6 @@ function initializeSentenceDropdown() {
             // 목록 표시
             sentenceList.style.display = 'block';
             
-            // 화살표 모양 유지 (변경 없음)
-            
             // 현재 선택된 문장으로 스크롤
             setTimeout(() => {
                 const activeItem = sentenceList.querySelector(`.sentence-item:nth-child(${sentenceIndex + 1})`);
@@ -4482,6 +4491,20 @@ function initializeSentenceDropdown() {
                     activeItem.scrollIntoView({ behavior: 'auto', block: 'center' });
                 }
             }, 100); // 시간을 늘려 안정적으로 스크롤 처리
+            // 드롭다운 열릴 때 게임 일시정지 및 버튼 비활성화
+            if (isGameRunning && !isGamePaused) {
+                togglePause();
+                isDropdownPause = true;
+                setTopButtonsDisabled(true);
+            }
+            // 하단 미디어가 재생 중이면 일시정지
+            if (typeof isBottomMediaPlaying !== 'undefined' && isBottomMediaPlaying) {
+                if (typeof toggleBottomMediaPause === 'function') toggleBottomMediaPause();
+                isDropdownBottomMediaPaused = true;
+            }
+            // 영어 문장 읽어주기 (현재 선택된 문장)
+            // speakSentence(sentences[sentenceIndex]); // <-- 이 줄을 주석처리 또는 삭제
+            playAllSentenceMp3sFromStart();
         }
     }
     
@@ -4653,7 +4676,7 @@ function populateSentenceList() {
                     }
                     
                     console.log(`문장 ${index + 1} 바로 표시됨:`, sentenceObj);
-                }, 300); // 게임 시작 후 약간의 지연 시간을 두고 문장 표시
+                }, 300);
             }, 100);
             
             console.log(`문장 ${index + 1} 선택됨, 게임 시작 예정`);
