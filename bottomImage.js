@@ -122,9 +122,6 @@ function startBottomMediaShow() {
     
     // 미디어 파일이 있는지 확인
     if (bottomMediaFiles.length > 0) {
-      // 인덱스 초기화 (항상 첫 번째부터 시작)
-      currentBottomMediaIndex = 0;
-      
       // 즉시 현재 미디어 표시 시작
       showCurrentBottomMedia();
       

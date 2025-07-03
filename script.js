@@ -2041,7 +2041,7 @@ function updateSubjectAuxClones(currentTime) {
         
         // 각 문자의 위치도 업데이트
         clone.charPositions.forEach(cp => {
-          cp.currentY = cp.originalY + (clone.targetY - clone.originalY) * easedT;
+          cp.currentY = cp.originalY + (clone.targetY - cp.originalY) * easedT;
         });
       } else {
         // 이동 완료, 잠시 대기 상태로 전환
@@ -3272,7 +3272,7 @@ function startFireworks(sentenceTextForFireworks, globalSentenceIndex, explosion
         t: 0, phase: "explode", holdDuration: 40, 
         // PC에서는 폭발 과정 0.92초(92), 문장 정렬 1초(100)로 설정, 모바일에서는 기존 값 유지
         explodeDuration: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 180 : 92,
-        gatherDuration: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 170 : 100,
+        gatherDuration: /Android|webOS|iPhone|iPad|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 170 : 100,
         originX: centerX, originY: explosionY,
         sentenceTextToDisplayAfter: sentenceTextForFireworks,
         finalSentenceIndex: globalSentenceIndex,
@@ -3833,7 +3833,11 @@ function gameLoop(time) {
   requestAnimationFrame(gameLoop);
 }
 
-document.getElementById('startBtn').onclick = startGame;
+document.getElementById('startBtn').onclick = function() {
+  if (!isGameRunning && !isGamePaused) {
+    startGame();
+  }
+};
 document.getElementById('pauseBtn').onclick = togglePause;
 document.getElementById('stopBtn').onclick = stopGame;
 
@@ -4635,6 +4639,26 @@ function populateSentenceList() {
             
             // 드롭다운 닫기
             sentenceList.style.display = 'none';
+            
+            // 1. 영어 읽기(오디오) 즉시 중단
+            stopDropdownMp3Playback();
+            
+            // 2. 드롭다운 버튼(사각형 → 삼각형) 복구
+            dropdownBtn.innerHTML = '&#9662;';
+            dropdownBtn.style.fontSize = '47px';
+            dropdownBtn.style.lineHeight = '';
+            dropdownBtn.style.minWidth = '';
+            dropdownBtn.style.minHeight = '';
+            dropdownBtn.style.padding = '';
+            
+            // 3. 메뉴 버튼 활성화
+            setTopButtonsDisabled(false);
+            
+            // 하단 미디어가 실제로 일시정지 상태라면 이어서 재생
+            if (typeof isBottomMediaPlaying !== 'undefined' && !isBottomMediaPlaying) {
+              if (typeof toggleBottomMediaPause === 'function') toggleBottomMediaPause();
+              if (typeof isDropdownBottomMediaPaused !== 'undefined') isDropdownBottomMediaPaused = false;
+            }
             
             // 게임이 진행 중이면 중지
             if (isGameRunning) {

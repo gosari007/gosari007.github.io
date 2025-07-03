@@ -253,6 +253,45 @@
         }
       });
     }
+
+    document.getElementById('startBtn').onclick = function() {
+      if (!isGameRunning && !isGamePaused) {
+        startGame();
+      }
+      // else: 아무 동작 없음
+    };
+
+    sentenceItem.addEventListener('click', function(e) {
+        // ... 기존 코드 ...
+        // 드롭다운 닫기
+        sentenceList.style.display = 'none';
+
+        // 1. 영어 읽기 중단
+        stopDropdownMp3Playback();
+
+        // 2. 드롭다운 버튼 원상복구
+        dropdownBtn.innerHTML = '&#9662;';
+        dropdownBtn.style.fontSize = '47px';
+        dropdownBtn.style.lineHeight = '';
+        dropdownBtn.style.minWidth = '';
+        dropdownBtn.style.minHeight = '';
+        dropdownBtn.style.padding = '';
+
+        // 3. 메뉴 버튼 활성화
+        setTopButtonsDisabled(false);
+
+        // 하단 미디어가 실제로 일시정지 상태라면 이어서 재생
+        if (typeof isBottomMediaPlaying !== 'undefined' && !isBottomMediaPlaying) {
+          if (typeof toggleBottomMediaPause === 'function') toggleBottomMediaPause();
+          if (typeof isDropdownBottomMediaPaused !== 'undefined') isDropdownBottomMediaPaused = false;
+        }
+
+        // 게임이 진행 중이면 중지
+        if (isGameRunning) {
+            stopGame();
+        }
+        // ... 기존 코드(게임 중이면 stopGame, startGame 등) ...
+    });
   </script>
 </body>
 </html>
