@@ -2783,7 +2783,8 @@ function drawSingleSentenceBlock(sentenceObject, baseY, isQuestionBlock, blockCo
                   // 패턴 식별
                 const pattern1 = isFirstWordWh && isSecondWordAux && words.length > 3;
                 const pattern2 = isFirstWordWh && isSecondWordAux && words.length <= 3;
-                  // 패턴 2에서 동사 인식을 위한 플래그
+                
+                // 패턴 2에서 동사 인식을 위한 플래그
                 let foundVerbInPattern2 = blockContext.verbFoundInPattern2 || false;
                 
                 // 패턴 2(의문사+조동사+동사)에서 동사 이후에 나오는 단어는 모두 흰색으로
@@ -2793,17 +2794,17 @@ function drawSingleSentenceBlock(sentenceObject, baseY, isQuestionBlock, blockCo
                 // 위치에 따른 색상 적용
                 else if (j === 0 && isFirstWordWh) {
                     // 의문사 - 항상 녹색
-                    color = '#5DBB63';
+                    color = '#249F24';
                 }
                 else if (j === 1 && isSecondWordAux) {
                     // 조동사 - 항상 파란색
-                    color = "#40b8ff";
+                    color = "#CC8400";
                 }
                 else if (j === 2) {
                     // 세 번째 단어
                     if (pattern1) {
                         // 패턴 1: 의문사 + 조동사 + 주어 + 동사
-                        color = "#40b8ff"; // 주어는 파란색
+                        color = "#CC8400"; // 주어는 파란색
                     } else if (pattern2 && isVerb(cleanedWords[2])) {
                         // 패턴 2: 의문사 + 조동사 + 동사
                         color = "#FFD600"; // 동사는 노란색
@@ -2825,7 +2826,7 @@ function drawSingleSentenceBlock(sentenceObject, baseY, isQuestionBlock, blockCo
                 
                 // 조동사 체크 - 한 문장에 하나의 조동사만 파란색으로
                 if (isAux(lowerCleanedWordForColor) || isBeen(lowerCleanedWordForColor) && !blockContext.auxColored) {
-                    color = "#40b8ff"; // 조동사는 파란색
+                    color = "#CC8400"; // 조동사는 파란색
                     blockContext.auxColored = true; // 조동사 색상 적용 표시
                 } 
                 // 본동사 체크 - 한 문장에 본동사 하나만 노란색으로
@@ -3036,7 +3037,7 @@ function drawCenterSentence() {
         
         questionWordClones.forEach(clone => {
             // 복제본 단어 그리기 (원본과 같은 녹색)
-            ctx.fillStyle = '#5DBB63';
+            ctx.fillStyle = '#249F24';
             clone.charPositions.forEach(charPos => {
                 ctx.fillText(charPos.char, charPos.x, charPos.currentY);
             });
@@ -3086,7 +3087,7 @@ function drawCenterSentence() {
                 // 교환 애니메이션 중에도 원래 색상 유지
                 // 조동사는 항상 파란색
                 auxChars.forEach(charPos => {
-                    ctx.fillStyle = '#40b8ff'; // 조동사 - 파란색
+                    ctx.fillStyle = '#CC8400'; // 조동사 - 파란색
                     ctx.fillText(charPos.char, charPos.x, charPos.currentY);
                 });
                 
@@ -3106,7 +3107,7 @@ function drawCenterSentence() {
             clone.charPositions.forEach((charPos, index) => {
                 if (index < auxLength) {
                     // 조동사 부분 - 파란색
-                    ctx.fillStyle = '#40b8ff';
+                    ctx.fillStyle = '#CC8400';
                 } else if (index < auxLength + spaceLength) {
                     // 공백 부분 - 흰색
                     ctx.fillStyle = '#ffffff';
@@ -4508,7 +4509,10 @@ function initializeSentenceDropdown() {
             }
             // 영어 문장 읽어주기 (현재 선택된 문장)
             // speakSentence(sentences[sentenceIndex]); // <-- 이 줄을 주석처리 또는 삭제
-            playAllSentenceMp3sFromStart();
+            setTimeout(() => {
+              dropdownMp3Index = (dropdownSentenceIndex + 1) % 96;
+              playAllSentenceMp3sFromStart();
+            }, 200);
         }
     }
     
@@ -4561,6 +4565,7 @@ function populateSentenceList() {
     sentencesToShow.forEach((sentence, index) => {
         const sentenceItem = document.createElement('div');
         sentenceItem.className = 'sentence-item';
+        sentenceItem.setAttribute('data-index', String(index));
           // 홀수 문장(의문문)에 배경색 추가 - 인덱스는 0부터 시작하므로 짝수 인덱스가 홀수 문장
         if (index % 2 === 0) {
             sentenceItem.classList.add('question-sentence');
@@ -4595,11 +4600,11 @@ function populateSentenceList() {
                 // 실제 단어 추출 (마침표, 콤마 등 제외)
                 const actualWord = word.replace(/[^\w\']/g, '');
                 
-                // 의문사는 녹색, 조동사는 파란색, 나머지는 흰색
+                // 의문사는 녹색, 조동사는 주황색, 나머지는 흰색
                 if (isQuestionWord(actualWord)) {
-                    wordSpan.style.color = '#4AFF4A'; // 의문사 녹색
+                    wordSpan.style.color = '#249F24'; // 의문사 진한 녹색
                 } else if (isModalVerb(actualWord)) {
-                    wordSpan.style.color = '#4A9FFF'; // 조동사 파란색
+                    wordSpan.style.color = '#CC8400'; // 조동사 진한 주황색
                 } else {
                     wordSpan.style.color = 'white'; // 나머지 흰색
                 }
@@ -4627,84 +4632,57 @@ function populateSentenceList() {
         
         sentenceItem.appendChild(sentenceNumber);
         sentenceItem.appendChild(sentenceText);
-          // 문장 클릭 이벤트 - 해당 문장으로 게임 시작하고 바로 문장 표시
-        sentenceItem.addEventListener('click', function(e) {
-            console.log(`문장 ${index + 1} 클릭됨`);
+        // 번호 클릭 이벤트 - 영어 읽기만
+        sentenceNumber.style.cursor = 'pointer';
+        sentenceNumber.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            stopDropdownMp3Playback();
+            playAllSentenceMp3sFromStart(index);
+        });
+        // 문장 클릭 이벤트 - 기존 게임 시작 기능
+        sentenceText.style.cursor = 'pointer';
+        sentenceText.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
-            // 문장 인덱스 설정 및 저장
             sentenceIndex = index;
             localStorage.setItem('sentenceIndex', sentenceIndex.toString());
-            
-            // 드롭다운 닫기
             sentenceList.style.display = 'none';
-            
-            // 1. 영어 읽기(오디오) 즉시 중단
             stopDropdownMp3Playback();
-            
-            // 2. 드롭다운 버튼(사각형 → 삼각형) 복구
             dropdownBtn.innerHTML = '&#9662;';
             dropdownBtn.style.fontSize = '47px';
             dropdownBtn.style.lineHeight = '';
             dropdownBtn.style.minWidth = '';
             dropdownBtn.style.minHeight = '';
             dropdownBtn.style.padding = '';
-            
-            // 3. 메뉴 버튼 활성화
             setTopButtonsDisabled(false);
-            
-            // 하단 미디어가 실제로 일시정지 상태라면 이어서 재생
             if (typeof isBottomMediaPlaying !== 'undefined' && !isBottomMediaPlaying) {
               if (typeof toggleBottomMediaPause === 'function') toggleBottomMediaPause();
               if (typeof isDropdownBottomMediaPaused !== 'undefined') isDropdownBottomMediaPaused = false;
             }
-            
-            // 게임이 진행 중이면 중지
             if (isGameRunning) {
                 stopGame();
             }
-            
-            // 새 게임 시작 및 바로 문장 표시
             setTimeout(() => {
                 startGame();
-                
-                // 게임 시작 후 바로 문장 표시 처리
                 setTimeout(() => {
-                    // 해당 문장 인덱스에 따라 홀수/짝수 문장 설정
-                    const isOdd = index % 2 === 0; // 0부터 시작하므로 index가 짝수면 실제로는 홀수 문장
-                      // 문장 분리 및 설정
-                    const sentenceText = sentences[index];
-                    
-                    // 줄바꿈 문자를 처리하여 두 줄로 분리 (이스케이프된 \\n과 실제 \n 모두 처리)
-                    const lines = sentenceText.split(/\\n|\n/);
-                    
-                    // 첫 줄과 두 번째 줄 설정 (없으면 빈 문자열)
+                    const isOdd = index % 2 === 0;
+                    const sentenceTextVal = sentences[index];
+                    const lines = sentenceTextVal.split(/\\n|\n/);
                     const line1 = lines[0] ? lines[0].trim() : "";
                     const line2 = lines[1] ? lines[1].trim() : "";
-                    
-                    console.log(`문장 분리 결과 - 첫째줄: "${line1}", 둘째줄: "${line2}"`);
-                    
-                    // 문장 객체 생성
                     const sentenceObj = { line1, line2 };
-                    
-                    // 홀수/짝수 위치에 문장 표시
                     if (isOdd) {
-                        // 홀수 문장 (질문 문장)
                         currentQuestionSentence = sentenceObj;
                         currentQuestionSentenceIndex = index;
                     } else {
-                        // 짝수 문장 (답변 문장)
                         currentAnswerSentence = sentenceObj;
                         currentAnswerSentenceIndex = index;
                     }
-                    
-                    console.log(`문장 ${index + 1} 바로 표시됨:`, sentenceObj);
                 }, 300);
             }, 100);
-            
-            console.log(`문장 ${index + 1} 선택됨, 게임 시작 예정`);
         });
+        // sentenceItem에는 클릭 이벤트를 부여하지 않는다.
         
         sentenceList.appendChild(sentenceItem);
     });

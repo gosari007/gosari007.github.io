@@ -164,6 +164,8 @@
     let isDropdownMp3Playing = false;
     let dropdownMp3Audio = null;
     let dropdownMp3Index = 0;
+    let dropdownSentenceIndex = Number(localStorage.getItem('dropdownSentenceIndex')) || 0;
+    let gameSentenceIndex = Number(localStorage.getItem('gameSentenceIndex')) || 0;
 
     function stopDropdownMp3Playback() {
       isDropdownMp3Playing = false;
@@ -173,23 +175,44 @@
       }
     }
 
-    function playAllSentenceMp3sFromStart() {
+    function playAllSentenceMp3sFromStart(startIndex = null) {
       stopDropdownMp3Playback();
       isDropdownMp3Playing = true;
-      dropdownMp3Index = 0;
+      if (typeof startIndex === 'number' && startIndex >= 0 && startIndex < 96) {
+        dropdownMp3Index = startIndex;
+      }
       function playNext() {
-        if (!isDropdownMp3Playing || dropdownMp3Index >= 96) {
+        if (!isDropdownMp3Playing) {
+          // 배경색 모두 제거
+          const items = document.querySelectorAll('.sentence-item');
+          items.forEach(item => item.classList.remove('dropdown-reading-bg'));
           stopDropdownMp3Playback();
           return;
+        }
+        if (dropdownMp3Index >= 96) {
+          dropdownMp3Index = 0; // 1번(0번 인덱스)부터 다시 반복
+        }
+        // 모든 문장에서 파란 바 제거
+        const allItems = document.querySelectorAll('.sentence-item');
+        allItems.forEach(item => item.classList.remove('dropdown-reading-bg'));
+        // 현재 읽는 문장에만 파란 바 추가
+        const curItem = document.querySelector(`.sentence-item[data-index='${String(dropdownMp3Index)}']`);
+        if (curItem) {
+          curItem.classList.add('dropdown-reading-bg');
+          console.log('배경 추가:', dropdownMp3Index);
         }
         const audioFilePath = `sounds/96_audio/${dropdownMp3Index + 1}.mp3`;
         dropdownMp3Audio = new Audio(audioFilePath);
         dropdownMp3Audio.volume = 0.8;
         dropdownMp3Audio.onended = () => {
+          dropdownSentenceIndex = dropdownMp3Index;
+          localStorage.setItem('dropdownSentenceIndex', dropdownSentenceIndex.toString());
           dropdownMp3Index++;
           playNext();
         };
         dropdownMp3Audio.onerror = () => {
+          dropdownSentenceIndex = dropdownMp3Index;
+          localStorage.setItem('dropdownSentenceIndex', dropdownSentenceIndex.toString());
           dropdownMp3Index++;
           playNext();
         };
@@ -208,48 +231,49 @@
 
       dropdownBtn.addEventListener('click', function(event) {
         if (sentenceList.style.display === 'block') {
-            // 닫기
-            sentenceList.style.display = 'none';
-            if (window.isDropdownPause) {
-                togglePause();
-                window.isDropdownPause = false;
-            }
-            setTopButtonsDisabled(false); // 버튼 활성화
-            toggleBottomMediaPause();
-            stopDropdownMp3Playback();
-            dropdownBtn.innerHTML = originalBtnHTML;
-            dropdownBtn.style.fontSize = originalBtnFontSize;
-            dropdownBtn.style.lineHeight = '';
-            dropdownBtn.style.minWidth = '';
-            dropdownBtn.style.minHeight = '';
-            dropdownBtn.style.padding = '';
+          // 닫기 로직
+          sentenceList.style.display = 'none';
+          if (window.isDropdownPause) {
+            togglePause();
+            window.isDropdownPause = false;
+          }
+          setTopButtonsDisabled(false); // 버튼 활성화
+          toggleBottomMediaPause();
+          stopDropdownMp3Playback();
+          dropdownBtn.innerHTML = originalBtnHTML;
+          dropdownBtn.style.fontSize = originalBtnFontSize;
+          dropdownBtn.style.lineHeight = '';
+          dropdownBtn.style.minWidth = '';
+          dropdownBtn.style.minHeight = '';
+          dropdownBtn.style.padding = '';
         } else {
-            // 열기
-            populateSentenceList();
-            sentenceList.style.display = 'block';
-            setTimeout(() => {
-                const activeItem = sentenceList.querySelector(`.sentence-item:nth-child(${window.sentenceIndex + 1})`);
-                if (activeItem) activeItem.scrollIntoView({ behavior: 'auto', block: 'center' });
-            }, 100);
-            if (window.isGameRunning && !window.isGamePaused) {
-                togglePause();
-                window.isDropdownPause = true;
-            }
-            setTopButtonsDisabled(true); // 버튼 비활성화
-            toggleBottomMediaPause();
-            playAllSentenceMp3sFromStart();
-            dropdownBtn.style.position = 'relative';
-            dropdownBtn.innerHTML = `
-              <svg width="34" height="34" viewBox="0 0 34 34"
-                style="display:block; position:relative; left:19px; top:19px;">
-                <rect x="6" y="13" width="22" height="12" fill="white" />
-              </svg>
-            `;
-            dropdownBtn.style.fontSize = '6px';
-            dropdownBtn.style.lineHeight = '1';
-            dropdownBtn.style.minWidth = '0';
-            dropdownBtn.style.minHeight = '0';
-            dropdownBtn.style.padding = '0';
+          // 열기 로직
+          populateSentenceList();
+          sentenceList.style.display = 'block';
+          setTimeout(() => {
+            const activeItem = sentenceList.querySelector(`.sentence-item:nth-child(${window.sentenceIndex + 1})`);
+            if (activeItem) activeItem.scrollIntoView({ behavior: 'auto', block: 'center' });
+          }, 100);
+          if (window.isGameRunning && !window.isGamePaused) {
+            togglePause();
+            window.isDropdownPause = true;
+          }
+          setTopButtonsDisabled(true);
+          toggleBottomMediaPause();
+          dropdownMp3Index = (dropdownSentenceIndex + 1) % 96;
+          playAllSentenceMp3sFromStart();
+          dropdownBtn.style.position = 'relative';
+          dropdownBtn.innerHTML = `
+            <svg width="34" height="34" viewBox="0 0 34 34"
+              style="display:block; position:relative; left:19px; top:19px;">
+              <rect x="6" y="13" width="22" height="12" fill="white" />
+            </svg>
+          `;
+          dropdownBtn.style.fontSize = '6px';
+          dropdownBtn.style.lineHeight = '1';
+          dropdownBtn.style.minWidth = '0';
+          dropdownBtn.style.minHeight = '0';
+          dropdownBtn.style.padding = '0';
         }
       });
     }
@@ -292,6 +316,67 @@
         }
         // ... 기존 코드(게임 중이면 stopGame, startGame 등) ...
     });
+
+    // 폭발 시
+    function onExplosion() {
+      // ...
+      gameSentenceIndex = 현재_폭발_문장_인덱스;
+      localStorage.setItem('gameSentenceIndex', gameSentenceIndex.toString());
+    }
+
+    // populateSentenceList 함수 내에서
+    // sentenceNumber, sentenceText 각각에 클릭 이벤트 분리
+    sentenceNumber.addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      stopDropdownMp3Playback();
+      playAllSentenceMp3sFromStart(index);
+    });
+    sentenceText.addEventListener('click', function(e) {
+      // 기존 sentenceItem 클릭 이벤트 코드 복사 (index, sentenceList 등 context 유지)
+      e.preventDefault();
+      e.stopPropagation();
+      sentenceIndex = index;
+      localStorage.setItem('sentenceIndex', sentenceIndex.toString());
+      sentenceList.style.display = 'none';
+      stopDropdownMp3Playback();
+      dropdownBtn.innerHTML = '&#9662;';
+      dropdownBtn.style.fontSize = '47px';
+      dropdownBtn.style.lineHeight = '';
+      dropdownBtn.style.minWidth = '';
+      dropdownBtn.style.minHeight = '';
+      dropdownBtn.style.padding = '';
+      setTopButtonsDisabled(false);
+      if (typeof isBottomMediaPlaying !== 'undefined' && !isBottomMediaPlaying) {
+        if (typeof toggleBottomMediaPause === 'function') toggleBottomMediaPause();
+        if (typeof isDropdownBottomMediaPaused !== 'undefined') isDropdownBottomMediaPaused = false;
+      }
+      if (isGameRunning) {
+        stopGame();
+      }
+      setTimeout(() => {
+        startGame();
+        setTimeout(() => {
+          const isOdd = index % 2 === 0;
+          const sentenceTextVal = sentences[index];
+          const lines = sentenceTextVal.split(/\\n|\n/);
+          const line1 = lines[0] ? lines[0].trim() : "";
+          const line2 = lines[1] ? lines[1].trim() : "";
+          const sentenceObj = { line1, line2 };
+          if (isOdd) {
+            currentQuestionSentence = sentenceObj;
+            currentQuestionSentenceIndex = index;
+          } else {
+            currentAnswerSentence = sentenceObj;
+            currentAnswerSentenceIndex = index;
+          }
+        }, 300);
+      }, 100);
+    });
+
+    // populateSentenceList에서 각 sentence-item에 data-index 부여
+    sentenceItem.className = 'sentence-item';
+    sentenceItem.setAttribute('data-index', index);
   </script>
 </body>
 </html>

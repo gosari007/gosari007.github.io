@@ -199,13 +199,27 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;  line-height: 1.4; /* 줄 간격을 1.2에서 1.4로 늘림 */
   margin-bottom: 10px; /* 기본 간격을 10px로 설정 */
+  font-family: Arial, 'Malgun Gothic', 'Nanum Gothic', sans-serif;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  touch-action: manipulation;
+}
+
+.sentence-item:active, .sentence-text:active, .sentence-number:active,
+.sentence-item:focus, .sentence-text:focus, .sentence-number:focus {
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* 홀수 문장(의문문)에 대한 스타일 - 배경색 제거 */
 .question-sentence {
-  text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5); /* 텍스트에 약간의 그림자로 가독성 향상 */
-  font-weight: 500; /* 약간 더 굵게 */
-  letter-spacing: 0.2px; /* 글자 간격 살짝 넓힘 */
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  /* text-shadow 등 모든 효과 제거 */
 }
 
 /* 짝수 번호 문장(답변)에 아래 여백 추가 - 대화 쌍 구분용 */
@@ -221,7 +235,8 @@ html, body {
 
 /* 홀수/짝수 문장 스타일 구분 */
 .sentence-item.question-sentence {
-  border-radius: 3px; /* 둥근 모서리 유지 */
+  border-radius: 3px;
+  /* text-shadow 등 모든 효과 제거 */
 }
 
 /* 문장 번호 스타일 */
@@ -231,7 +246,19 @@ html, body {
   margin-right: 3px; /* 8px에서 5px 줄여 3px로 변경하여 문장 시작을 좌측으로 5px 이동 */
   font-weight: bold;
   color: #16c016;
-  font-size: 17.1px; /* 기존 크기의 95%로 줄임 (18px의 95% = 17.1px) */
+  font-size: 18.5px; /* 기존 17.96px의 103% */
+  background: transparent !important;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  touch-action: manipulation;
+}
+
+.sentence-item:hover .sentence-number {
+  background: transparent !important;
 }
 
 #sentenceImageContainer {
@@ -370,4 +397,26 @@ video::-webkit-media-controls {
   opacity: 0; /* 초기 투명도를 0으로 설정 */
   object-fit: cover !important; /* 비율 유지하며 컨테이너에 맞춤 */
   object-position: center -80px !important; /* 윗부분 80px 크롭 (상단을 -80px 위치로 이동) */
+}
+
+.sentence-text {
+  font-size: 18.5px; /* 기존 17.96px의 103% */
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  touch-action: manipulation;
+}
+
+.dropdown-reading-bg {
+  background: rgba(30, 80, 220, 0.32) !important; /* 진한 파랑, 투명도 32% */
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.question-sentence, .sentence-item.question-sentence, .sentence-text, .sentence-item span {
+  text-shadow: none !important;
+  filter: none !important;
+  box-shadow: none !important;
 }
