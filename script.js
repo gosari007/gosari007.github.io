@@ -80,7 +80,7 @@ const sentences = [
   "We wouldn't poke it; \nwe would hum!", // 46.txt
   "When wouldn't it be shy \nwith us?", // 47.txt
   "It wouldn't be shy \nwith gentle friends!", // 48.txt
-  "Where can we test \nthis giant parachute?", // 49.txt
+  "Where could we test \nthis giant parachute?", // 49.txt
   "We can jump from \nthis tall cliff!", // 50.txt
   "Why can you be so brave \nnow?", // 51.txt
   "I can be brave \nwith you, Toto!", // 52.txt
@@ -2782,44 +2782,30 @@ function drawSingleSentenceBlock(sentenceObject, baseY, isQuestionBlock, blockCo
                 
                 // 두 번째 단어가 조동사인지 확인 (있을 경우)
                 const isSecondWordAux = words.length > 1 ? isAux(cleanedWords[1]) : false;
-                  // 패턴 식별
-                const pattern1 = isFirstWordWh && isSecondWordAux && words.length > 3;
-                const pattern2 = isFirstWordWh && isSecondWordAux && words.length <= 3;
-                
-                // 패턴 2에서 동사 인식을 위한 플래그
-                let foundVerbInPattern2 = blockContext.verbFoundInPattern2 || false;
-                
-                // 패턴 2(의문사+조동사+동사)에서 동사 이후에 나오는 단어는 모두 흰색으로
-                if (pattern2 && foundVerbInPattern2 && j > 2) {
-                    color = "#fff"; // 패턴 2에서 동사 이후 모든 단어는 흰색
-                }
-                // 위치에 따른 색상 적용
-                else if (j === 0 && isFirstWordWh) {
-                    // 의문사 - 항상 녹색
-                    color = '#249F24';
-                }
-                else if (j > 0 && isAux(cleanedWords[j])) {
-                    // 의문사 다음에 오는 모든 조동사(두 번째, 세 번째, ...)
-                    color = "#4A9FFF"; // 스카이 블루
-                }
-                else if (j === 2 && isAux(cleanedWords[1]) && !isAux(cleanedWords[2])) {
-                    // 조동사 다음에 오는 주어(의문사-조동사-주어 패턴)
-                    color = "#1A6DFF"; // 짙은 파란색
-                }
-                else if (j === 2) {
-                    // 세 번째 단어
-                    if (pattern1) {
-                        // 패턴 1: 의문사 + 조동사 + 주어 + 동사
+
+                // "패턴 1": 의문사 + 조동사 + 주어 + 동사 (총 4단어)
+                // 이전에 `words.length > 3`는 정확히 4개의 단어를 의도하는 것으로 보입니다.
+                const isPattern1 = isFirstWordWh && isSecondWordAux && words.length === 4;
+
+                if (isPattern1) {
+                    if (j === 0) { // 의문사
+                        color = '#249F24'; // 녹색
+                    } else if (j === 1) { // 조동사
+                        color = "#4A9FFF"; // 스카이 블루
+                    } else if (j === 2 || j === 3) { // 주어 또는 동사
                         color = "#1A6DFF"; // 짙은 파란색
-                    } else if (pattern2 && isVerb(cleanedWords[2])) {
-                        // 패턴 2: 의문사 + 조동사 + 동사
-                        color = "#1A6DFF"; // 짙은 파란색
-                        blockContext.verbFoundInPattern2 = true; // 패턴 2에서 동사 발견 표시
+                    } else {
+                        color = "#fff"; // 그 외는 흰색 (패턴 1은 4단어이므로 이 else는 작동하지 않을 것)
                     }
-                }
-                else if (j === 3 && pattern1 && isVerb(cleanedWords[3])) {
-                    // 패턴 1의 네 번째 단어 (동사)
-                    color = "#1A6DFF"; // 짙은 파란색
+                } else { // 패턴 1이 아닌 의문문 첫 번째 줄의 경우 (이전 로직 기반, 필요에 따라 조정)
+                    if (j === 0 && isFirstWordWh) {
+                        color = '#249F24'; // 의문사 - 녹색
+                    } else if (j > 0 && isAux(cleanedWords[j])) {
+                        color = "#4A9FFF"; // 조동사 - 스카이 블루
+                    }
+                    else {
+                        color = "#fff"; // 그 외는 흰색
+                    }
                 }
             }            // 의문문의 둘째줄은 모두 흰색으로 표시
             else if (isCurrentBlockContentQuestionType && i === 1) {
