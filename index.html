@@ -238,7 +238,6 @@
             window.isDropdownPause = false;
           }
           setTopButtonsDisabled(false); // 버튼 활성화
-          toggleBottomMediaPause();
           stopDropdownMp3Playback();
           dropdownBtn.innerHTML = originalBtnHTML;
           dropdownBtn.style.fontSize = originalBtnFontSize;
@@ -256,10 +255,18 @@
           }, 100);
           if (window.isGameRunning && !window.isGamePaused) {
             togglePause();
-            window.isDropdownPause = true;
+            const pauseBtn = document.getElementById('pauseBtn');
+            if (pauseBtn) pauseBtn.textContent = 'RESUME';
+            pauseBottomMedia();
+            console.log('드롭다운에서 pauseBottomMedia 호출');
+          } else {
+            const pauseBtn = document.getElementById('pauseBtn');
+            if (pauseBtn) pauseBtn.textContent = 'RESUME';
+            pauseBottomMedia();
+            console.log('드롭다운에서 pauseBottomMedia 호출(이미 일시정지)');
           }
+          window.isGamePaused = true;
           setTopButtonsDisabled(true);
-          toggleBottomMediaPause();
           dropdownMp3Index = (dropdownSentenceIndex + 1) % 96;
           playAllSentenceMp3sFromStart();
           dropdownBtn.style.position = 'relative';
@@ -377,6 +384,35 @@
     // populateSentenceList에서 각 sentence-item에 data-index 부여
     sentenceItem.className = 'sentence-item';
     sentenceItem.setAttribute('data-index', index);
+
+    document.getElementById('pauseBtn').onclick = function() {
+      if (!window.isGamePaused) {
+        togglePause();
+        this.textContent = 'RESUME';
+        window.isGamePaused = true;
+      } else {
+        togglePause();
+        this.textContent = 'PAUSE';
+        window.isGamePaused = false;
+      }
+    };
+
+    function pauseBottomMedia() {
+      // 동영상
+      const bottomVideo = document.getElementById('bottomVideo');
+      if (bottomVideo && !bottomVideo.paused) bottomVideo.pause();
+      // 오디오도 있다면
+      const bottomAudio = document.getElementById('bottomAudio');
+      if (bottomAudio && !bottomAudio.paused) bottomAudio.pause();
+    }
+
+    function resumeBottomMedia() {
+      const bottomVideo = document.getElementById('bottomVideo');
+      if (bottomVideo && bottomVideo.paused) bottomVideo.play();
+      // 필요시 오디오도 추가
+      // const bottomAudio = document.getElementById('bottomAudio');
+      // if (bottomAudio && bottomAudio.paused) bottomAudio.play();
+    }
   </script>
 </body>
 </html>
