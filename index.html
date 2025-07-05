@@ -230,6 +230,15 @@
       const originalBtnFontSize = dropdownBtn.style.fontSize || '47px';
 
       dropdownBtn.addEventListener('click', function(event) {
+        // 게임이 실행 중인지 PAUSE 버튼 상태로 확인
+        const pauseBtn = document.getElementById('pauseBtn');
+        const isGameActuallyRunning = pauseBtn && pauseBtn.textContent === 'PAUSE';
+        
+        // 게임이 실행 중일 때는 드롭다운 버튼 작동 안함
+        if (isGameActuallyRunning) {
+          return; // 드롭다운 버튼 작동 차단
+        }
+        
         if (sentenceList.style.display === 'block') {
           // 닫기 로직
           sentenceList.style.display = 'none';
